@@ -19,6 +19,7 @@ type ProxyEntry struct {
 	Server    string         `json:"server"`
 	Port      int            `json:"port"`
 	Reality   bool           `json:"reality,omitempty"` // 含 reality-opts（用于缺 flow 预警）
+	Mlkem     bool           `json:"mlkem,omitempty"`   // reality-opts.support-x25519mlkem768
 	Flow      string         `json:"flow,omitempty"`
 	Raw       string         `json:"raw,omitempty"`  // 新节点：粘贴的 mihomo YAML 片段
 	Node      map[string]any `json:"node,omitempty"` // 新节点：链接解析的结构化产物（优先于 Raw）
@@ -228,6 +229,7 @@ func (d *Doc) Model() *Model {
 			Server:    getStr(p, "server"),
 			Port:      getInt(p, "port"),
 			Reality:   mapGet(p, "reality-opts") != nil,
+			Mlkem:     getBool(mapGet(p, "reality-opts"), "support-x25519mlkem768"),
 			Flow:      getStr(p, "flow"),
 		})
 	}
@@ -491,19 +493,24 @@ func Validate(m *Model, portBusy func(int) bool) []Issue {
 		if p.Name != "" {
 			names[p.Name] = true
 		}
-		// vless+Reality 缺 flow：多数服务端强制 xtls-rprx-vision，缺失握手失败
+		// vless+Reality 握手失败预警：服务端用 Vision 需 flow；Xray 26.9.8+
+		// 起强制要 support-x25519mlkem768。两者都缺时提示用户核对来源链接参数。
 		reality := p.Reality
 		flow := p.Flow
+		mlkem := p.Mlkem
 		if p.Node != nil {
-			if _, ok := p.Node["reality-opts"]; ok {
+			if ro, ok := p.Node["reality-opts"].(map[string]any); ok {
 				reality = true
+				if b, _ := ro["support-x25519mlkem768"].(bool); b {
+					mlkem = true
+				}
 			}
 			if flow == "" {
 				flow, _ = p.Node["flow"].(string)
 			}
 		}
-		if p.Type == "vless" && reality && flow == "" {
-			add("warn", "节点:"+p.Name, "vless+Reality 节点缺少 flow 字段；多数服务端要求 flow: xtls-rprx-vision，缺失会握手失败（延迟测试 error/timeout）")
+		if p.Type == "vless" && reality && flow == "" && !mlkem {
+			add("warn", "节点:"+p.Name, "vless+Reality 节点缺 flow 且未开 support-x25519mlkem768；若握手失败/延迟测试 error：Vision 服务端需加 flow: xtls-rprx-vision，新版 Xray 服务端需在 reality-opts 加 support-x25519mlkem768: true（粘贴 vless:// 链接会自动带上）")
 		}
 	}
 	groupNames := map[string]bool{}

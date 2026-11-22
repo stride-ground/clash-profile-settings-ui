@@ -115,6 +115,9 @@ func parseVLESS(u *url.URL) (*ParsedNode, error) {
 		if v := q.Get("spx"); v != "" {
 			ro["spider-x"] = v
 		}
+		if v := q.Get("support-x25519mlkem768"); v == "true" || v == "1" {
+			ro["support-x25519mlkem768"] = true // Xray 26.9.8+ 服务端强制要求
+		}
 		node["reality-opts"] = ro
 		node["client-fingerprint"] = firstOf(q.Get("fp"), "chrome")
 	case "tls":
