@@ -12,6 +12,10 @@ Clash Verge Rev / mihomo 出站配置器 —— 一个**单文件 Windows 工具
 粘链接 → 组成「出口」→ 绑端口 → 指纹浏览器填 socks5://127.0.0.1:端口
 ```
 
+| 新手任务 | 详细模式 |
+|---|---|
+| ![新手任务](docs/screenshots/01-easy-mode.png) | ![详细模式](docs/screenshots/02-detail-mode.png) |
+
 ## 功能特性
 
 - **节点导入零门槛**：直接粘贴 `vless://`、`hysteria2://` / `hy2://` 分享链接，或整段 mihomo YAML 节点块（支持 `- name:` 列表项、多节点序列），解析预览后一键加入
@@ -108,7 +112,7 @@ go test ./...
 
 - [新手指南](docs/BEGINNER_GUIDE.md) —— 从一条 vless 链接到指纹浏览器能用，逐步走通
 - [使用手册](docs/USER_MANUAL.md) —— 全部界面、字段、API 与文件行为详解
-- [需求调研](proxy-client-research.md) · [PRD](docs/PRD.md) · [架构](docs/ARCHITECTURE.md) · [开发](docs/DEVELOPMENT.md) · [测试计划](docs/TEST_PLAN.md)
+- [PRD](docs/PRD.md) · [架构](docs/ARCHITECTURE.md) · [开发](docs/DEVELOPMENT.md) · [测试计划](docs/TEST_PLAN.md)
 
 ## License
 

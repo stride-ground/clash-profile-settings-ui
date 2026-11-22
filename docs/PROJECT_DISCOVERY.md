@@ -4,7 +4,7 @@
 
 ## 1. 目标与范围
 
-- 【事实】需求来源：`proxy-client-research.md` 第五节"本场景（指纹浏览器多 Profile）推荐配置"。
+- 【事实】需求来源：用户私有调研文档 `proxy-client-research.md` 第五节"本场景（指纹浏览器多 Profile）推荐配置"（含私人部署信息，不入库）。
 - 【事实】目标产物：一个编译后的 Windows 二进制，启动后打开 HTML UI，可视化完成 §5 推荐配置：
   - mihomo `listeners`：每个本地端口绑定固定节点或策略组（一端口一出口）
   - `proxy-groups`：以 `url-test` 为主实现出口内自动容灾
@@ -14,7 +14,7 @@
 ## 2. 现状盘点
 
 - 【事实】仓库：`E:\github\clash-profile-settings-ui`，2026-11-22 初始化 git，默认分支 `main`。
-- 【事实】已存在：`proxy-client-research.md`（调研+本机 CVR 部署运维记录）；`go.mod`；`mihomo.go`（模型层先行草稿，本次通过 `go vet` 与编译检查，仅缺 `main`）。
+- 【事实】已存在：`proxy-client-research.md`（调研+本机 CVR 部署运维记录，本地私有、不入库）；`go.mod`；`mihomo.go`（模型层先行草稿，本次通过 `go vet` 与编译检查，仅缺 `main`）。
 - 【事实】环境：Go 1.27.1 windows/amd64；`GOPROXY=goproxy.cn,direct`。
 - 【事实】本机部署背景（research 附录）：CVR 安装于 `C:\Program Files\Clash Verge\`，profile 目录 `%APPDATA%\io.github.clash-verge-rev.clash-verge-rev\profiles\`，现用端口 7890(混合)+12001–12004(多出口)。
 

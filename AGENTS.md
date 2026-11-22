@@ -2,7 +2,7 @@
 
 ## 项目事实与文档入口
 
-- 目标：编译产出 Windows 单 exe，启动后打开 HTML UI，可视化完成 `proxy-client-research.md` §5 的 mihomo 配置（listeners 一端口一出口 + url-test 策略组），写回 Clash Verge Rev profile。用户=单人本机；非目标与验收见 `docs/PRD.md`。
+- 目标：编译产出 Windows 单 exe，启动后打开 HTML UI，可视化完成 mihomo 指纹浏览器多 Profile 场景配置（listeners 一端口一出口 + url-test 策略组），写回 Clash Verge Rev profile。用户=单人本机；非目标与验收见 `docs/PRD.md`。
 - 类型/语言：CLI 本地工具，Go 1.27（windows/amd64），标准库 + 唯一依赖 `gopkg.in/yaml.v3`；无数据库（YAML 文件即持久层，保存先写 `.bak`）。
 - 前端复杂度：低（embed 单页原生 JS，无构建链）。
 - 关键目录：`mihomo.go`=YAML 保真读写与 §5 校验；`server.go`=HTTP API；`main.go`=入口；`index.html`=UI；`docs/`=治理文档；`README.md`=对外说明，`docs/USER_MANUAL.md`/`docs/BEGINNER_GUIDE.md`=用户文档。

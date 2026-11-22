@@ -1,0 +1,103 @@
+# 演示配置（虚构数据，仅用于 README 截图）
+mixed-port: 7890
+allow-lan: false
+mode: rule
+unified-delay: true
+log-level: info
+external-controller: 127.0.0.1:9097
+proxies:
+  - name: 演示-香港01
+    type: vless
+    server: hk1.demo-example.com
+    port: 443
+    uuid: 11111111-2222-3333-4444-555555555501
+    udp: true
+    tls: true
+    servername: www.microsoft.com
+    reality-opts:
+      public-key: DEMO_PUBLIC_KEY_xxxxxxxxxxxxxxxxxxxxx
+      short-id: ab01cd
+    network: tcp
+    client-fingerprint: chrome
+    flow: xtls-rprx-vision
+  - name: 演示-香港02
+    type: vless
+    server: hk2.demo-example.com
+    port: 443
+    uuid: 11111111-2222-3333-4444-555555555502
+    tls: true
+    servername: dl.google.com
+    reality-opts:
+      public-key: DEMO_PUBLIC_KEY_yyyyyyyyyyyyyyyyyyyyy
+      short-id: ef02ab
+    network: tcp
+    client-fingerprint: chrome
+  - name: 演示-日本01
+    type: hysteria2
+    server: jp1.demo-example.com
+    port: 32001
+    password: demo-password-01
+    sni: www.apple.com
+    skip-cert-verify: false
+  - name: 演示-新加坡01
+    type: vless
+    server: sg1.demo-example.com
+    port: 31085
+    uuid: 11111111-2222-3333-4444-555555555504
+    tls: true
+    servername: th.bing.com
+    reality-opts:
+      public-key: DEMO_PUBLIC_KEY_zzzzzzzzzzzzzzzzzzzzz
+      short-id: "cd03ef"
+      support-x25519mlkem768: true
+    network: tcp
+    client-fingerprint: chrome
+  - name: 演示-美国01
+    type: hysteria2
+    server: us1.demo-example.com
+    port: 52000
+    password: demo-password-02
+    sni: www.bing.com
+    obfs: salamander
+    obfs-password: demo-obfs-pass
+proxy-groups:
+  - name: 出口A-自动
+    type: url-test
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    proxies:
+      - 演示-香港01
+      - 演示-香港02
+      - 演示-日本01
+  - name: 出口B-手动
+    type: select
+    proxies:
+      - 演示-新加坡01
+      - 演示-美国01
+      - 演示-香港01
+  - name: 出口C-备用
+    type: fallback
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    proxies:
+      - 演示-美国01
+      - 演示-新加坡01
+listeners:
+  - name: exit-12001
+    type: socks
+    listen: 127.0.0.1
+    port: 12001
+    proxy: 出口A-自动
+  - name: exit-12002
+    type: socks
+    listen: 127.0.0.1
+    port: 12002
+    proxy: 出口B-手动
+  - name: exit-12003
+    type: mixed
+    listen: 127.0.0.1
+    port: 12003
+    proxy: 演示-香港01
+rules:
+  - DOMAIN-SUFFIX,example.com,DIRECT
+  - MATCH,出口A-自动

@@ -107,4 +107,4 @@ vless://aaaaaaaa-...@vless1.demo-example.com:31085?security=reality&pbk=...&sid=
 - **proxies（节点）**：上游代理服务器配置（vless/hy2 等），是流量的最终出口
 - 链路：`浏览器 → 127.0.0.1:端口(listener) → 组/节点 → 目标网站`，**不走 rules 分流规则**
 
-> 想了解界面每个字段：见 [使用手册](USER_MANUAL.md)；想了解为什么这么配：见 [调研文档](../proxy-client-research.md) §5。
+> 想了解界面每个字段：见 [使用手册](USER_MANUAL.md)。

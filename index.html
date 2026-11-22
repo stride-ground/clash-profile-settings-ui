@@ -263,7 +263,10 @@
 const S = {
   path: '', model: null, dirty: false,
   scanDir: '', files: [],
-  mode: localStorage.getItem('cps.mode') || 'easy',
+  // ?mode=easy|detail|guide 深链优先，其次 localStorage
+  mode: ['easy','detail','guide'].includes(new URLSearchParams(location.search).get('mode'))
+        ? new URLSearchParams(location.search).get('mode')
+        : (localStorage.getItem('cps.mode') || 'easy'),
   pending: [],            // 任务①解析出的待加入节点
   gtype: 'url-test',      // 任务②选中的组类型
   nodeFilter: '', advNodeFilter: '', gfFilter: '',

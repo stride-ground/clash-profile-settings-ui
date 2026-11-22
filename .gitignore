@@ -9,3 +9,6 @@
 # Go
 *.test
 *~
+
+# 私有调研文档（含个人部署信息，不入库）
+proxy-client-research.md
