@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>线框 03 — 三模式（傻瓜 / 详细 / 引导）</title>
+<title>线框 03 v3 — 三模式（新手任务 / 详细 / 详细+说明）</title>
 <style>
   * { box-sizing: border-box; margin: 0; }
   body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background:#f5f5f5; color:#222; padding:16px; }
@@ -17,23 +17,29 @@
   .sec-h { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px dashed #bbb; font-weight:600; font-size:14px; }
   .sec-h .sp { margin-left:auto; font-weight:400; font-size:12px; color:#666; }
   .row { display:flex; gap:10px; align-items:center; padding:10px 14px; flex-wrap:wrap; }
-  input, select { border:1px solid #999; background:#fff; padding:4px 6px; font-size:13px; }
+  input, select, textarea { border:1px solid #999; background:#fff; padding:4px 6px; font-size:13px; font-family:inherit; }
   .btn { display:inline-block; border:1px solid #888; background:#eee; padding:4px 12px; font-size:13px; border-radius:3px; }
   .btn.primary { background:#ddd; border-color:#555; font-weight:600; }
   .btn.sm { padding:1px 8px; font-size:12px; }
-  .btn.big { padding:10px 26px; font-size:15px; }
   .note { color:#555; font-size:12px; }
   .mono { font-family:Consolas, monospace; font-size:12px; }
-  .step { border:1px solid #999; margin:12px 14px; }
-  .step-h { background:#eee; padding:8px 12px; font-weight:600; font-size:14px; }
-  .step-h .n { display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; border-radius:50%; border:1.5px solid #555; margin-right:8px; }
+  .task { border:1px solid #999; margin:12px 14px; }
+  .task-h { background:#eee; padding:8px 12px; font-weight:600; font-size:14px; }
+  .task-h .n { display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; border-radius:50%; border:1.5px solid #555; margin-right:8px; }
+  .task-h .why { font-weight:400; font-size:12px; color:#555; margin-left:10px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
   th, td { border:1px dashed #bbb; padding:6px 8px; text-align:left; }
   th { background:#eee; font-weight:600; }
   .help { background:#f0f0f0; border-left:4px solid #999; padding:8px 12px; font-size:12.5px; color:#333; margin:8px 14px; line-height:1.7; }
-  .summary { margin:10px 14px; padding:10px; border:1px dashed #888; font-size:13px; line-height:1.8; }
+  .radio-card { display:inline-block; border:1px solid #999; padding:8px 12px; margin:4px 8px 4px 0; font-size:12.5px; width:300px; vertical-align:top; }
+  .radio-card b { font-size:13px; }
+  .radio-card.on { outline:2px solid #555; background:#eee; }
+  .chk { border:1px dashed #bbb; padding:6px 10px; max-height:110px; overflow:hidden; column-width:190px; font-size:12.5px; }
+  .err-line { color:#7a1f1f; font-size:12px; padding:2px 14px; }
   .marker { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border:1px solid #555; border-radius:50%; font-size:11px; font-weight:700; background:#fff; }
   .legend { margin-top:14px; padding:10px 14px; background:#fff; border:1px dashed #888; font-size:12.5px; line-height:1.9; }
+  .del { border:1px solid #999; padding:0 6px; font-size:12px; }
+  .pill { display:inline-block; border:1px solid #888; border-radius:8px; padding:0 8px; font-size:11px; margin-left:6px; }
 </style>
 </head>
 <body>
@@ -43,94 +49,120 @@
 <header>
   <h1>Clash 出站配置器</h1>
   <nav class="modes">
-    <button class="mbtn on">傻瓜模式</button>
+    <button class="mbtn on">新手任务</button>
     <button class="mbtn">详细模式</button>
-    <button class="mbtn">引导模式</button>
+    <button class="mbtn">详细+说明</button>
   </nav>
 </header>
 <div class="help" style="margin:8px 0 0">
-  <b>傻瓜模式</b>：只想"每个浏览器窗口走不同节点"，3 步填完直接用。<br>
-  <b>详细模式</b>：当前线框 01 的完整表格（懂 mihomo 概念的人用）。<br>
-  <b>引导模式</b>：和详细模式相同的界面，但每个字段下面常驻大白话说明。
+  <b>新手任务</b>：默认入口。手里有节点链接 → 按任务①②③走一遍就能用。<br>
+  <b>详细模式</b>：线框 01 的完整表格（listeners/groups/nodes 全字段）。<br>
+  <b>详细+说明</b>：和详细模式相同的界面，每个字段下面常驻大白话说明。
 </div>
 
-<h2>模式 1 — 傻瓜模式（推荐默认入口）</h2>
+<h2>模式 1 — 新手任务（默认入口）</h2>
 
-<div class="step">
-  <div class="step-h"><span class="n">1</span>要开几个浏览器环境？</div>
-  <div class="row">
-    环境数量 <input value="4" style="width:60px">
-    起始端口 <input value="12001" style="width:80px">
-    <span class="note">端口自动连号：12001、12002、12003、12004 <span class="marker">1</span></span>
+<!-- ============ 任务① 加节点 ============ -->
+<div class="task">
+  <div class="task-h"><span class="n">1</span>把你的节点加进来<span class="why">— 有 vless:// / hy2:// 链接就直接粘，一行一个</span></div>
+  <div class="row" style="align-items:flex-start">
+    <textarea rows="4" style="flex:1;font-family:Consolas,monospace;font-size:12px">vless://aaaa-bbbb@203.0.113.10:443?security=reality&sni=www.microsoft.com&pbk=xxx#我家VPS-1
+hysteria2://mypassword@vps2.example.com:24443?sni=bing.com#我家VPS-2
+ss://this-will-fail</textarea>
+    <div>
+      <button class="btn primary">解析链接</button><br><br>
+      <span class="note">或粘贴 <a>YAML 片段</a></span>
+    </div>
   </div>
-</div>
-
-<div class="step">
-  <div class="step-h"><span class="n">2</span>每个环境走哪个节点？</div>
+  <div class="err-line">✕ 第 3 行：不支持的链接类型 ss://（本版支持 vless://、hysteria2://、hy2://；其他请改用 YAML 片段）<span class="marker">1</span></div>
   <table>
-    <tr><th style="width:90px">环境</th><th style="width:80px">端口</th><th>首选节点</th><th>备用节点（可选：首选挂了自动换）</th><th style="width:200px">指纹浏览器填</th></tr>
-    <tr>
-      <td>环境 1</td><td class="mono">12001</td>
-      <td><select style="width:95%"><option>VPS-1-Reality</option><option>（节点列表）</option></select></td>
-      <td><select style="width:95%"><option>（不设置）</option><option>VPS-2-Reality</option></select></td>
-      <td class="mono">socks5://127.0.0.1:12001 <button class="btn sm">复制</button></td>
-    </tr>
-    <tr>
-      <td>环境 2</td><td class="mono">12002</td>
-      <td><select style="width:95%"><option>VPS-2-Reality</option></select></td>
-      <td><select style="width:95%"><option>VPS-2-Hy2</option></select></td>
-      <td class="mono">socks5://127.0.0.1:12002 <button class="btn sm">复制</button></td>
-    </tr>
-    <tr>
-      <td>环境 3</td><td class="mono">12003</td>
-      <td><select style="width:95%"><option>US-05-vless</option></select></td>
-      <td><select style="width:95%"><option>（不设置）</option></select></td>
-      <td class="mono">socks5://127.0.0.1:12003 <button class="btn sm">复制</button></td>
-    </tr>
-    <tr>
-      <td>环境 4</td><td class="mono">12004</td>
-      <td><select style="width:95%"><option>JP-01-ss2022</option></select></td>
-      <td><select style="width:95%"><option>（不设置）</option></select></td>
-      <td class="mono">socks5://127.0.0.1:12004 <button class="btn sm">复制</button></td>
-    </tr>
+    <tr><th>名称（可改）</th><th>类型</th><th>服务器</th><th>端口</th><th style="width:130px">解析到的关键字段</th></tr>
+    <tr><td><input value="我家VPS-1" style="width:150px"></td><td>vless</td><td class="mono">203.0.113.10</td><td class="mono">443</td><td class="note">reality · sni=www.microsoft.com</td></tr>
+    <tr><td><input value="我家VPS-2" style="width:150px"></td><td>hysteria2</td><td class="mono">vps2.example.com</td><td class="mono">24443</td><td class="note">sni=bing.com</td></tr>
   </table>
-  <div class="row note" style="padding-top:6px"><span class="marker">2</span> 填了备用节点的行 → 自动生成「环境N-自动」url-test 组（首选+备用）并绑到端口；不填则端口直接绑首选节点</div>
+  <div class="row"><button class="btn primary">加入节点列表（2）</button><span class="note">同名节点会询问覆盖还是保留两个</span></div>
+
+  <div class="sec-h" style="border-top:1px dashed #bbb">已有节点（135）<span class="sp">改名字/删节点在这里；改字段去详细模式</span></div>
+  <div class="row"><input placeholder="过滤节点名" style="width:240px"><span class="note">点击行内 ✕ 删除（被组/端口引用会先提示）</span></div>
+  <table>
+    <tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th><th style="width:36px"></th></tr>
+    <tr><td>我家VPS-1</td><td>vless</td><td class="mono">203.0.113.10</td><td class="mono">443</td><td><span class="del">✕</span></td></tr>
+    <tr><td>HK-01-vless</td><td>vless</td><td class="mono">hk.example.com</td><td class="mono">443</td><td><span class="del">✕</span></td></tr>
+    <tr><td colspan="5" class="note">… 其余行滚动显示</td></tr>
+  </table>
 </div>
 
-<div class="step">
-  <div class="step-h"><span class="n">3</span>确认并保存</div>
-  <div class="summary">
-    将创建：<b>4 个出口端口</b>（12001–12004，仅本机可用）＋ <b>1 个自动容灾组</b>（环境2-自动：VPS-2-Reality / VPS-2-Hy2）。<br>
-    已有同名端口/组会被替换更新，其余配置（订阅节点、规则）不受影响。 <span class="marker">3</span>
+<!-- ============ 任务② 建组 ============ -->
+<div class="task">
+  <div class="task-h"><span class="n">2</span>把节点组成「出口」<span class="why">— 组 = 给一组节点起个名字，端口绑到组上就能自动换节点</span></div>
+  <div class="row" style="align-items:flex-start">
+    <div>
+      <div class="note">哪种组？ <span class="marker">2</span></div>
+      <label class="radio-card on"><b>● 自动切换</b>（url-test）<br>定时测延迟，自动用最快的那个；正在用的挂了自动换下一个。<b>推荐</b></label>
+      <label class="radio-card"><b>○ 手动选择</b>（select）<br>组里放几个备选，用哪个由你在 Clash Verge 代理页手动点。</label>
+      <label class="radio-card"><b>○ 备用顺序</b>（fallback）<br>按列表顺序用第一个能连上的，坏了顺延。</label>
+    </div>
   </div>
-  <div class="row"><button class="btn primary big">生成并保存</button>
-    <span class="note">保存后：指纹浏览器各 Profile 填对应 socks5 地址 → 去 Clash Verge 切一次 profile 生效</span></div>
+  <div class="row">
+    组名 <input value="我的自动组" style="width:160px">
+    测速间隔 <input value="300" style="width:60px"> 秒
+    <span class="note">测速地址默认 generate_204，一般不用改</span>
+  </div>
+  <div class="row" style="align-items:flex-start">
+    <div style="flex:1">
+      <div class="note">成员（勾选要放进组的节点）：<input placeholder="过滤" style="width:120px"></div>
+      <div class="chk">
+        ☑ 我家VPS-1&nbsp;&nbsp;☑ 我家VPS-2&nbsp;&nbsp;☐ HK-01-vless&nbsp;&nbsp;☐ JP-03-hy2&nbsp;&nbsp;☐ US-05-vless&nbsp;&nbsp;☐ …
+      </div>
+    </div>
+  </div>
+  <div class="row"><button class="btn primary">创建 / 更新组</button><span class="note">同名组 = 更新成员与参数</span></div>
+
+  <div class="sec-h" style="border-top:1px dashed #bbb">已有的组（4）<span class="sp">点「载入」把组填回上面表单修改；「删除」前先检查无端口引用</span></div>
+  <table>
+    <tr><th>组名</th><th>类型</th><th>成员数</th><th>被哪些端口用</th><th style="width:120px"></th></tr>
+    <tr><td>我的自动组</td><td>url-test</td><td>2</td><td class="mono">12001</td><td><span class="del">载入</span> <span class="del">删除</span></td></tr>
+    <tr><td>出口A</td><td>select</td><td>8</td><td class="mono">12002</td><td><span class="del">载入</span> <span class="del">删除</span></td></tr>
+    <tr><td>PROXY</td><td>select</td><td>12</td><td class="note">—（全局用）</td><td><span class="del">载入</span> <span class="del">删除</span></td></tr>
+  </table>
 </div>
 
-<h2>模式 3 — 引导模式 = 详细模式 + 常驻大白话说明（示例：出口端口区）</h2>
+<!-- ============ 任务③ 绑端口 ============ -->
+<div class="task">
+  <div class="task-h"><span class="n">3</span>给每个浏览器环境一个端口<span class="why">— 一行一个端口；指纹浏览器 Profile 填对应 socks5 地址</span></div>
+  <table>
+    <tr><th style="width:90px">端口</th><th>出口绑到（节点或组）</th><th style="width:220px">指纹浏览器填这个</th><th style="width:36px"></th></tr>
+    <tr><td><input value="12001" style="width:70px"></td><td><select style="width:60%"><option>我的自动组（url-test）</option><option>我家VPS-1（节点）</option><option>出口A（select）</option></select></td><td class="mono">socks5://127.0.0.1:12001 <button class="btn sm">复制</button></td><td><span class="del">✕</span></td></tr>
+    <tr><td><input value="12002" style="width:70px"></td><td><select style="width:60%"><option>出口A（select）</option></select></td><td class="mono">socks5://127.0.0.1:12002 <button class="btn sm">复制</button></td><td><span class="del">✕</span></td></tr>
+    <tr><td colspan="4"><button class="btn sm">+ 加一个端口</button> <span class="note">类型默认 socks、监听固定 127.0.0.1（要改去详细模式）<span class="marker">3</span></span></td></tr>
+  </table>
+  <div class="row"><button class="btn primary" style="padding:8px 22px">保存到 Clash Verge</button>
+    <span class="note">保存后：指纹浏览器填 socks5 地址 → 去 CVR 切一次 profile 生效</span></div>
+</div>
+
+<h2>模式 3 — 详细+说明 = 详细模式 + 常驻大白话说明（示例：策略组区）</h2>
 
 <section>
-  <div class="sec-h">出口端口（listeners） <span class="sp">每个指纹浏览器 Profile 占一行</span> <button class="btn sm">+ 添加端口</button></div>
-  <div class="help">这里是"本机代理端口"清单：<b>一行 = 一个出口</b>。指纹浏览器的每个 Profile 填其中一行的 socks5 地址，它的流量就固定走这行绑的节点/组。互相之间完全独立、同时在线。 <span class="marker">4</span></div>
+  <div class="sec-h">策略组（proxy-groups） <span class="sp">组是端口的"出口"</span> <button class="btn sm">+ 添加组</button></div>
+  <div class="help"><b>组干嘛用？</b>把几个节点打包起个名字（如"美国自动"）。端口绑到组上：select 组由你手动选用哪个节点；url-test 组自己测速选最快的、坏了自动换。比端口直接绑死一个节点更抗造。 <span class="marker">4</span></div>
   <table>
-    <tr><th>名称</th><th>类型</th><th>监听</th><th>端口</th><th>绑定目标</th><th>浏览器代理地址</th></tr>
-    <tr><td><input value="prof-us1"></td><td><select><option>socks</option></select></td><td><input value="127.0.0.1"></td><td><input value="12001"></td><td><input value="VPS-1-Reality"></td><td class="mono">socks5://… <button class="btn sm">复制</button></td></tr>
+    <tr><th>组名</th><th>类型</th><th>成员</th></tr>
+    <tr><td><input value="我的自动组"></td><td><select><option>url-test</option></select></td><td class="chk">☑ 我家VPS-1 ☑ 我家VPS-2 ☐ …</td></tr>
   </table>
   <div class="help">
-    <b>名称</b>：随便起，自己认得就行（如"环境1"）。<br>
-    <b>类型</b>：选 <b>socks</b> 即可；想让同一端口同时支持 http 代理选 mixed。<br>
-    <b>监听</b>：固定 <b>127.0.0.1</b>——只允许本机软件连。改成 0.0.0.0 会把没密码的代理暴露给局域网所有设备，别改。<br>
-    <b>端口</b>：12001 起随便挑，别和别的软件重复（页面上方会自动检查冲突）。<br>
-    <b>绑定目标</b>：这行的流量最终从哪个节点/组出去。直接填节点名最快；填 url-test 组可以自动容灾（推荐）。
+    <b>url-test</b>：每隔 interval 秒对成员测一次延迟，用最快的；当前节点断了自动切。<br>
+    <b>select</b>：不自动选，在 Clash Verge「代理」页手动点。<br>
+    <b>fallback</b>：按成员顺序用第一个活的。<br>
+    <b>url</b>：测速目标，默认 http://www.gstatic.com/generate_204 即可。
   </div>
 </section>
 
 <div class="legend">
 <b>交互标注</b><br>
-<span class="marker">1</span> 起始端口/数量改了，第 2 步表格行数与端口自动重排；与现有 listener 冲突时校验区报错<br>
-<span class="marker">2</span> 傻瓜模式产出的就是普通 listeners+proxy-groups——生成后切到详细模式能看到并继续改，三种模式编辑同一份数据，不会互相冲突<br>
-<span class="marker">3</span> 「生成并保存」= 把第 2 步结果合并进当前配置 → 校验（无 error）→ 写文件+备份；有 error 则列出原因不落盘<br>
-<span class="marker">4</span> 引导模式所有区块都有这种说明（文件栏、校验、组、节点、常规、YAML 预览），实现上同一组件多渲染 help 文本
+<span class="marker">1</span> 解析是服务端 /api/parse-links 逐行处理：失败的行红字列原因，成功的行进预览表；改预览表里的"名称"才入列表（重复名询问）<br>
+<span class="marker">2</span> 三种组的区别用大白话写在选项卡里；只放这三种（load-balance/relay 属高级，去详细模式）<br>
+<span class="marker">3</span> 任务③是 listeners 的简化视图：只暴露端口+绑定目标，其余字段（name 自动生成为 exit-端口、type=socks、listen=127.0.0.1）自动填；详细模式里同一批数据完整可见可改<br>
+<span class="marker">4</span> 「详细+说明」模式所有区块都有这种灰底说明（文件栏、校验、节点、常规、YAML 预览），实现上同一组件多渲染 help 文本
 </div>
 
 </div>

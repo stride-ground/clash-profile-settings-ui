@@ -10,6 +10,9 @@
   h2 { font-size:14px; margin:22px 0 8px; color:#444; }
   header { display:flex; align-items:center; gap:12px; padding:10px 14px; background:#fff; border:1px solid #bbb; }
   header h1 { font-size:17px; font-weight:600; }
+  .modes { display:flex; border:1px solid #777; border-radius:4px; overflow:hidden; }
+  .mbtn { border:none; background:#fff; padding:5px 14px; font-size:13px; }
+  .mbtn.on { background:#ddd; font-weight:700; box-shadow:inset 0 0 0 1px #555; }
   section { margin-top:12px; background:#fff; border:1px solid #bbb; }
   .sec-h { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px dashed #bbb; font-weight:600; font-size:14px; }
   .row { display:flex; gap:10px; align-items:center; padding:10px 14px; flex-wrap:wrap; }
@@ -36,7 +39,7 @@
 
 <h2>状态 A — 启动后未加载任何文件（空态）</h2>
 
-<header><h1>Clash Profile 出站配置器</h1><span class="note mono">http://127.0.0.1:18630</span></header>
+<header><h1>Clash 出站配置器</h1><nav class="modes"><button class="mbtn">新手任务</button><button class="mbtn on">详细模式</button><button class="mbtn">详细+说明</button></nav><span class="note mono">http://127.0.0.1:18630</span></header>
 
 <section>
   <div class="row">
@@ -66,7 +69,7 @@
 
 <h2>状态 B — 加载/保存失败（顶部横幅错误）</h2>
 
-<header><h1>Clash Profile 出站配置器</h1></header>
+<header><h1>Clash 出站配置器</h1><nav class="modes"><button class="mbtn">新手任务</button><button class="mbtn on">详细模式</button><button class="mbtn">详细+说明</button></nav></header>
 <div class="banner">✕ 加载失败：YAML 解析失败: yaml: line 23: did not find expected key — 请检查文件后重试 <span class="marker">2</span></div>
 
 <div class="banner">✕ 保存失败：新节点 YAML 解析失败: yaml: line 1: did not find expected ',' or '}' — 修改未写入文件 <span class="marker">3</span></div>

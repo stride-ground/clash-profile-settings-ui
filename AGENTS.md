@@ -15,9 +15,9 @@
 |---|---|
 | 当前阶段/状态 | A 低保真线框 — **待审核（Gate 2）** |
 | 本阶段允许修改 | `design/wireframes/`、`docs/WIREFRAMES.md`、本文件状态记录 |
-| 审核产物与版本 | `design/wireframes/01–03` + `docs/WIREFRAMES.md` v2（含扫描+三模式）@ 见 git log |
-| 最近明确批准 | 用户，2026-11-22，Gate 1：批准精简门序（合并高保真）、不委派主会话实现、分享链接导入列为 v1 非目标 |
-| 未决问题/风险 | Gate 2 反馈已并入（扫描/三模式/环检测）待复批；写回保真性待真实 profile 验证 |
+| 审核产物与版本 | `design/wireframes/01–03` + `docs/WIREFRAMES.md` v3（扫描+新手任务模式，CR-001）@ 见 git log |
+| 最近明确批准 | 用户，2026-11-22：Gate 1（精简门序/不委派/原非目标）+ CR-001 approved（新手任务方向、链接解析转核心功能） |
+| 未决问题/风险 | 线框 v3 待复批；写回保真性待真实 profile 验证；链接解析覆盖 vless/hy2 其余类型待后续 CR |
 | 下一阶段及进入条件 | Gate 2 批准 → 实现+可运行 Demo（server.go / index.html / main.go） |
 
 ## 本项目阶段与交付（提案，待 Gate 1 确认）

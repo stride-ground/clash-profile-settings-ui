@@ -9,6 +9,7 @@ clash-profile-settings-ui/
 ├── main.go        入口：flags、net.Listen、打开浏览器、服务启动
 ├── server.go      HTTP 路由 + handler + 会话态（当前 *Doc）
 ├── mihomo.go      Doc/Model：YAML 保真读写、Apply、Validate（已实现）
+├── shareparse.go  vless://、hysteria2://(hy2://) 分享链接 → mihomo proxy 映射（CR-001）
 ├── index.html     embed 单页 UI（原生 JS，无构建步骤）
 └── go.mod         唯一依赖 gopkg.in/yaml.v3
 ```
@@ -41,6 +42,7 @@ YAML 文件 ──LoadDoc──> yaml.Node 树（完整保留）
 | POST `/api/scan` | `{dir}` | `{dir', files:[{name,path,mtime}], model?}` | 目录扫描：先试 `<dir>\profiles\*.yaml`，再试 `<dir>\*.yaml/.yml`；`dir` 为空用默认 CVR 目录；autoload=找到时返回最新一个的 model |
 | POST `/api/load` | `{path}` | `{model, exists}` | 读文件→Model；解析失败 400+原因 |
 | POST `/api/new` | — | `{model}` | 空白配置模板（不绑定路径） |
+| POST `/api/parse-links` | `{text}` | `{proxies:[{name,type,server,port,raw}], errors:[{line,message}]}` | 分享链接逐行解析；`raw`=该节点 mihomo YAML，保存时按 `ProxyEntry.Raw` 入列 |
 | POST `/api/validate` | `{model}` | `{issues:[{level,where,message}]}` | §5 规则校验 + 组环检测 + 端口占用探测 |
 | POST `/api/preview` | `{model}` | `{yaml}` | Apply→Marshal 不落盘 |
 | POST `/api/save` | `{path, model}` | `{ok, backup}` | Apply→备份→写回；失败 400 |
@@ -56,7 +58,8 @@ YAML 文件 ──LoadDoc──> yaml.Node 树（完整保留）
 - **写回策略**：先 `path+".bak"` 复制原文件再覆盖写；无 BOM UTF-8；`yaml.Encoder` 缩进 2。
 - **校验在服务端**：`Validate` 是唯一规则源，UI 只展示——保证保存/预览/前端提示三者一致。含组引用成环检测（DFS，error 级）。
 - **端口占用探测**：`net.DialTimeout(127.0.0.1:port, 300ms)`，仅 info 级（本机跑着 mihomo 属正常）。
-- **傻瓜模式在客户端生成**：向导产出普通 listeners+groups 合入当前 Model（同名覆盖），随后走统一的 validate→save 路径——后端无感知，三模式编辑同一份数据。
+- **新手任务在客户端组装**：任务①调 `/api/parse-links` 把链接转 YAML 片段挂进 Model；任务②③直接改 Model 的 groups/listeners——三模式编辑同一份数据，统一走 validate→save。
+- **链接解析在服务端**：`shareparse.go` 用 `net/url` 解析；vless 取 uuid/host/port + query（security=reality→reality-opts{sni→servername, pbk→public-key, sid→short-id}、fp→client-fingerprint、flow、type=ws/grpc→传输层字段）；hy2 取 password + query（sni、insecure→skip-cert-verify、obfs/obfs-password）。解析产物先编码为 `raw` YAML 入 Model，写回走统一 Apply。
 - **flags**：`-addr`（默认 `127.0.0.1:18630`，占用时顺延最多 20 端口）、`-file`（启动即加载指定文件，优先于自动扫描）、`-no-browser`。
 
 ## 5. 安全
