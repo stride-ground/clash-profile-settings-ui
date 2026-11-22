@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线框 01 — 主界面（已加载 profile）</title>
+<style>
+  /* 低保真线框：仅用灰阶与虚线，不表达最终视觉 */
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background:#f5f5f5; color:#222; padding:16px; }
+  .page { max-width:1180px; margin:0 auto; }
+  header { display:flex; align-items:center; gap:12px; padding:10px 14px; background:#fff; border:1px solid #bbb; }
+  header h1 { font-size:17px; font-weight:600; }
+  .dirty { margin-left:auto; font-size:12px; color:#8a5a00; border:1px dashed #8a5a00; padding:2px 8px; border-radius:10px; }
+  section { margin-top:12px; background:#fff; border:1px solid #bbb; }
+  .sec-h { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px dashed #bbb; font-weight:600; font-size:14px; }
+  .sec-h .sp { margin-left:auto; font-weight:400; font-size:12px; color:#666; }
+  .btn { display:inline-block; border:1px solid #888; background:#eee; padding:4px 12px; font-size:13px; border-radius:3px; }
+  .btn.primary { background:#ddd; border-color:#555; font-weight:600; }
+  .btn.sm { padding:1px 8px; font-size:12px; }
+  .row { display:flex; gap:10px; align-items:center; padding:10px 14px; flex-wrap:wrap; }
+  input, select, textarea { border:1px solid #999; background:#fff; padding:4px 6px; font-size:13px; font-family:inherit; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { border:1px dashed #bbb; padding:6px 8px; text-align:left; }
+  th { background:#eee; font-weight:600; }
+  .mono { font-family:Consolas, monospace; font-size:12px; }
+  .tag { display:inline-block; border:1px solid #999; border-radius:8px; padding:0 6px; font-size:11px; margin:1px 2px; }
+  .card { border:1px solid #999; margin:10px 14px; }
+  .card-h { padding:6px 10px; background:#eee; font-size:13px; display:flex; gap:10px; align-items:center; }
+  .card-b { padding:10px; font-size:13px; }
+  .note { color:#555; font-size:12px; }
+  .marker { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border:1px solid #555; border-radius:50%; font-size:11px; font-weight:700; background:#fff; }
+  .legend { margin-top:14px; padding:10px 14px; background:#fff; border:1px dashed #888; font-size:12.5px; line-height:1.9; }
+  .issue { padding:4px 14px; font-size:12.5px; border-bottom:1px dashed #ccc; }
+  .issue.e { border-left:4px solid #888; }
+  .issue.w { border-left:4px solid #bbb; }
+  .issue.i { border-left:4px solid #ddd; color:#666; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+  .chk { border:1px dashed #bbb; padding:6px 10px; max-height:110px; overflow:hidden; column-width:170px; column-count:auto; font-size:12.5px; }
+  pre { border:1px dashed #bbb; margin:10px 14px; padding:10px; font-size:12px; background:#fafafa; max-height:220px; overflow:hidden; }
+  .del { color:#333; border:1px solid #999; padding:0 6px; font-size:12px; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Clash Profile 出站配置器</h1>
+  <span class="note mono">http://127.0.0.1:18630</span>
+  <span class="dirty">● 有未保存修改</span>
+</header>
+
+<!-- ① 文件栏 -->
+<section>
+  <div class="row">
+    <b>配置文件</b>
+    <select style="min-width:330px">
+      <option>x7demo1profile.yaml — 机场节点（2026-11-13）</option>
+      <option>（扫描自 %APPDATA%\io.github.clash-verge-rev…\profiles\）</option>
+    </select>
+    <span class="note">或</span>
+    <input style="flex:1;min-width:220px" placeholder="手填 YAML 路径，如 D:\cfg\my.yaml">
+    <button class="btn primary">加载</button>
+    <button class="btn">新建空白</button>
+    <button class="btn primary">保存</button>
+    <button class="btn">YAML 预览</button>
+  </div>
+  <div class="row note" style="padding-top:0">
+    当前：C:\Users\demo\AppData\Roaming\io.github.clash-verge-rev.clash-verge-rev\profiles\x7demo1profile.yaml
+    <span class="marker">1</span>
+  </div>
+</section>
+
+<!-- ② 校验区 -->
+<section>
+  <div class="sec-h">校验 <span class="sp">1 error · 2 warn · 1 info — 编辑后自动刷新</span></div>
+  <div class="issue e">✕ [端口:prof-us4] 绑定的「VPS-4-Reality」不存在于节点或策略组 <span class="marker">2</span></div>
+  <div class="issue w">! [端口:prof-us2] 绑定的是单节点；建议指向 url-test 组实现故障自动切换</div>
+  <div class="issue w">! [策略组:VPS-2-自动] 未设测速 url，将用默认 generate_204</div>
+  <div class="issue i">i [端口:prof-us1] 本机已有进程监听 12001（可能是正在运行的 mihomo）</div>
+</section>
+
+<!-- ③ 出口端口 -->
+<section>
+  <div class="sec-h">出口端口（listeners） <span class="sp">每个指纹浏览器 Profile 占一行</span> <button class="btn sm">+ 添加端口</button></div>
+  <table>
+    <tr><th style="width:130px">名称</th><th style="width:80px">类型</th><th style="width:110px">监听</th><th style="width:80px">端口</th><th>绑定目标（节点/策略组）</th><th style="width:210px">浏览器代理地址</th><th style="width:36px"></th></tr>
+    <tr>
+      <td><input value="prof-us1" style="width:110px"></td>
+      <td><select><option>socks</option><option>mixed</option><option>http</option></select></td>
+      <td><input value="127.0.0.1" style="width:96px"></td>
+      <td><input value="12001" style="width:60px"></td>
+      <td><input list="targets" value="VPS-1-Reality" style="width:92%"></td>
+      <td class="mono">socks5://127.0.0.1:12001 <button class="btn sm">复制</button></td>
+      <td><span class="del">✕</span></td>
+    </tr>
+    <tr>
+      <td><input value="prof-us2" style="width:110px"></td>
+      <td><select><option>socks</option><option>mixed</option><option>http</option></select></td>
+      <td><input value="127.0.0.1" style="width:96px"></td>
+      <td><input value="12002" style="width:60px"></td>
+      <td><input list="targets" value="VPS-2-自动" style="width:92%"></td>
+      <td class="mono">socks5://127.0.0.1:12002 <button class="btn sm">复制</button></td>
+      <td><span class="del">✕</span></td>
+    </tr>
+    <tr>
+      <td><input value="prof-us4" style="width:110px"></td>
+      <td><select><option>mixed</option><option>socks</option><option>http</option></select></td>
+      <td><input value="127.0.0.1" style="width:96px"></td>
+      <td><input value="12004" style="width:60px"></td>
+      <td><input list="targets" value="VPS-4-Reality" style="width:92%"></td>
+      <td class="mono">socks5://127.0.0.1:12004 <button class="btn sm">复制</button></td>
+      <td><span class="del">✕</span></td>
+    </tr>
+  </table>
+  <datalist id="targets">
+    <option value="VPS-2-自动">策略组 · url-test</option>
+    <option value="出口A">策略组 · select</option>
+    <option value="VPS-1-Reality">节点 · vless</option>
+    <option value="VPS-2-Hy2">节点 · hysteria2</option>
+  </datalist>
+  <div class="row note" style="padding-top:6px"><span class="marker">3</span> 绑定目标 = 节点名或策略组名，留空表示走全局规则（此处会出现 info 提示）</div>
+</section>
+
+<!-- ④ 策略组 -->
+<section>
+  <div class="sec-h">策略组（proxy-groups） <span class="sp">listener 推荐绑 url-test 组</span> <button class="btn sm">+ 添加组</button></div>
+
+  <div class="card">
+    <div class="card-h">
+      <input value="VPS-2-自动" style="width:150px">
+      <select><option>url-test</option><option>select</option><option>fallback</option><option>load-balance</option><option>relay</option></select>
+      <span class="note">url-test：按延迟自动选活节点，单节点挂了自动换</span>
+      <span class="del" style="margin-left:auto">删除组 ✕</span>
+    </div>
+    <div class="card-b">
+      <div class="cols">
+        <div>
+          <div class="note">成员（勾选节点/其他组）<span class="marker">4</span></div>
+          <div class="chk">
+            ☑ VPS-2-Reality<br>☑ VPS-2-Hy2<br>☐ VPS-1-Reality<br>☐ JP-01-ss2022<br>☐ US-05-vless<br>☐ …（列表滚动）
+          </div>
+        </div>
+        <div>
+          <div class="note">测速 url</div>
+          <input value="https://www.gstatic.com/generate_204" style="width:100%">
+          <div class="note" style="margin-top:6px">interval（秒） <input value="300" style="width:70px">
+          &nbsp; tolerance（ms） <input value="50" style="width:60px"></div>
+          <div class="note" style="margin-top:6px">use（订阅 provider，可选） <input style="width:60%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-h">
+      <input value="出口A" style="width:150px">
+      <select><option>select</option><option>url-test</option><option>fallback</option><option>load-balance</option><option>relay</option></select>
+      <span class="note">select：手动固定节点（CVR 代理页也可点选）</span>
+      <span class="del" style="margin-left:auto">删除组 ✕</span>
+    </div>
+    <div class="card-b">
+      <div class="chk">☑ SG-01-vless ☑ SG-02-vless ☐ …</div>
+    </div>
+  </div>
+</section>
+
+<!-- ⑤ 节点 -->
+<section>
+  <div class="sec-h">节点（proxies） <span class="sp">共 135 个 · 主要来自订阅，此处可查看/删除/手动新增</span></div>
+  <div class="row"><input placeholder="过滤：名称/类型/服务器" style="width:300px"><span class="note">显示 135/135</span></div>
+  <table>
+    <tr><th>名称</th><th style="width:90px">类型</th><th>服务器</th><th style="width:70px">端口</th><th style="width:36px"></th></tr>
+    <tr><td>VPS-1-Reality</td><td>vless</td><td class="mono">203.0.113.10</td><td class="mono">443</td><td><span class="del">✕</span></td></tr>
+    <tr><td>VPS-2-Reality</td><td>vless</td><td class="mono">203.0.113.11</td><td class="mono">443</td><td><span class="del">✕</span></td></tr>
+    <tr><td>VPS-2-Hy2</td><td>hysteria2</td><td class="mono">vps2.example.com</td><td class="mono">24443</td><td><span class="del">✕</span></td></tr>
+    <tr><td colspan="5" class="note">… 其余行同构，滚动显示</td></tr>
+  </table>
+  <div class="row" style="align-items:flex-start">
+    <textarea rows="3" style="flex:1;font-family:Consolas,monospace" placeholder='粘贴 mihomo 节点 YAML（单行 {name:…, type:…} 或多行块均可）&#10;例: {name: VPS-4-Reality, type: vless, server: 1.2.3.4, port: 443, uuid: …}'></textarea>
+    <button class="btn">添加节点</button>
+  </div>
+  <div class="row note" style="padding-top:0"><span class="marker">5</span> 节点其余字段（uuid/密钥/流控）原样保留，不在此编辑；删除被引用的节点会在校验区报 error</div>
+</section>
+
+<!-- ⑥ 常规 -->
+<section>
+  <div class="sec-h">常规 <span class="sp">§5.4：本场景只用本地端口</span></div>
+  <div class="row">
+    mixed-port <input value="7897" style="width:70px">
+    allow-lan <input type="checkbox">
+    mode <select><option>rule</option><option>global</option><option>direct</option></select>
+    <span class="note">系统代理/TUN 请在 CVR 设置中关闭（本工具不接管）</span>
+  </div>
+</section>
+
+<!-- ⑦ YAML 预览（点击文件栏「YAML 预览」滚动锚定到此） -->
+<section id="yaml">
+  <div class="sec-h">YAML 预览 <span class="sp">保存前可核对最终产出</span> <button class="btn sm">刷新</button> <button class="btn sm">复制</button> <button class="btn sm">下载 .yaml</button></div>
+  <pre>listeners:
+  - name: prof-us1
+    type: socks
+    port: 12001
+    listen: 127.0.0.1
+    proxy: VPS-1-Reality
+  - name: prof-us2
+    type: socks
+    port: 12002
+    listen: 127.0.0.1
+    proxy: VPS-2-自动
+proxy-groups:
+  - name: VPS-2-自动
+    type: url-test
+    proxies: [VPS-2-Reality, VPS-2-Hy2]
+    url: https://www.gstatic.com/generate_204
+    interval: 300
+    tolerance: 50
+# …其余字段（proxies/rules/dns…）原样保留，预览中折叠显示…</pre>
+</section>
+
+<!-- 图例 -->
+<div class="legend">
+<b>交互标注</b><br>
+<span class="marker">1</span> 路径只读展示；切换来源 = 下拉（扫描）或手填后点「加载」。保存成功 → toast：「已保存（备份 xxx.bak），请到 Clash Verge 切换一次 profile 生效」<br>
+<span class="marker">2</span> error/warn/info 三级；error 不阻止保存但红色置顶。点击 issue 滚动定位到对应区块并高亮<br>
+<span class="marker">3</span> 绑定目标输入框带 datalist：策略组名 + 节点名混合候选，可直接键入<br>
+<span class="marker">4</span> 成员勾选列表含全部节点名与其他组名（防环由校验兜底：组引用成环报 error——本期仅提示不检测，列入风险）<br>
+<span class="marker">5</span> 新增节点仅接受 YAML 片段（v1 不做分享链接解析）；解析失败在 textarea 下方红字提示
+</div>
+
+</div>
+</body>
+</html>

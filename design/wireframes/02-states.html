@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线框 02 — 空态 / 错误 / 保存反馈</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background:#f5f5f5; color:#222; padding:16px; }
+  .page { max-width:1180px; margin:0 auto 40px; }
+  h2 { font-size:14px; margin:22px 0 8px; color:#444; }
+  header { display:flex; align-items:center; gap:12px; padding:10px 14px; background:#fff; border:1px solid #bbb; }
+  header h1 { font-size:17px; font-weight:600; }
+  section { margin-top:12px; background:#fff; border:1px solid #bbb; }
+  .sec-h { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px dashed #bbb; font-weight:600; font-size:14px; }
+  .row { display:flex; gap:10px; align-items:center; padding:10px 14px; flex-wrap:wrap; }
+  input, select { border:1px solid #999; background:#fff; padding:4px 6px; font-size:13px; }
+  .btn { display:inline-block; border:1px solid #888; background:#eee; padding:4px 12px; font-size:13px; border-radius:3px; }
+  .btn.primary { background:#ddd; border-color:#555; font-weight:600; }
+  .btn.disabled { opacity:.4; }
+  .note { color:#555; font-size:12px; }
+  .mono { font-family:Consolas, monospace; font-size:12px; }
+  .empty { padding:36px 20px; text-align:center; color:#555; }
+  .empty .big { font-size:15px; margin-bottom:10px; }
+  .banner { padding:8px 14px; font-size:13px; border:1px solid #999; background:#eee; margin-top:12px; border-left:5px solid #555; }
+  .toast { position:static; display:inline-block; border:1px solid #555; background:#fff; padding:8px 14px; font-size:13px; box-shadow:2px 2px 0 #bbb; }
+  .disabled-block { opacity:.35; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { border:1px dashed #bbb; padding:6px 8px; text-align:left; }
+  th { background:#eee; }
+  .marker { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border:1px solid #555; border-radius:50%; font-size:11px; font-weight:700; background:#fff; }
+  .legend { margin-top:14px; padding:10px 14px; background:#fff; border:1px dashed #888; font-size:12.5px; line-height:1.9; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h2>状态 A — 启动后未加载任何文件（空态）</h2>
+
+<header><h1>Clash Profile 出站配置器</h1><span class="note mono">http://127.0.0.1:18630</span></header>
+
+<section>
+  <div class="row">
+    <b>配置文件</b>
+    <select style="min-width:330px"><option>x7demo1profile.yaml — 机场节点（2026-11-13）</option></select>
+    <input style="flex:1;min-width:220px" placeholder="手填 YAML 路径">
+    <button class="btn primary">加载</button>
+    <button class="btn">新建空白</button>
+    <button class="btn disabled">保存</button>
+    <button class="btn disabled">YAML 预览</button>
+  </div>
+</section>
+
+<section>
+  <div class="empty">
+    <div class="big">尚未加载配置 <span class="marker">1</span></div>
+    <div>从上方下拉选择扫描到的 Clash Verge profile，或粘贴路径后点「加载」；<br>「新建空白」从零开始（自带 mixed-port/rules 等最小字段）。</div>
+    <div style="margin-top:14px"><button class="btn primary">新建空白配置</button></div>
+  </div>
+</section>
+
+<section class="disabled-block">
+  <div class="sec-h">出口端口（listeners）</div>
+  <table><tr><th>名称</th><th>类型</th><th>监听</th><th>端口</th><th>绑定目标</th><th>浏览器代理地址</th></tr>
+  <tr><td colspan="6" class="note">— 加载配置后可编辑 —</td></tr></table>
+</section>
+
+<h2>状态 B — 加载/保存失败（顶部横幅错误）</h2>
+
+<header><h1>Clash Profile 出站配置器</h1></header>
+<div class="banner">✕ 加载失败：YAML 解析失败: yaml: line 23: did not find expected key — 请检查文件后重试 <span class="marker">2</span></div>
+
+<div class="banner">✕ 保存失败：新节点 YAML 解析失败: yaml: line 1: did not find expected ',' or '}' — 修改未写入文件 <span class="marker">3</span></div>
+
+<h2>状态 C — 保存成功（右下角 toast，约 5s 消失）</h2>
+
+<div class="banner" style="border-left-color:#2a7a2a">✓ toast：<b>已保存</b> → 备份 x7demo1profile.yaml.bak → <b>请到 Clash Verge 切换一次 profile 使配置生效</b></div>
+<div class="row"><span class="toast">✓ 已保存（备份 .bak）— 请到 Clash Verge 切换一次 profile 使配置生效</span> <span class="note">← toast 视觉示意（实际右上角浮层）</span></div>
+
+<div class="legend">
+<b>交互标注</b><br>
+<span class="marker">1</span> 空态下编辑区整体禁用（置灰），仅文件栏与「新建空白」可用；刷新页面后若服务内存有已加载配置（/api/state），自动恢复<br>
+<span class="marker">2</span> 加载失败不污染当前状态——若之前已加载过文件，原内容保持可编辑<br>
+<span class="marker">3</span> 保存失败保证「未写入」，用户无需回滚；`.bak` 只在成功写盘流程中生成
+</div>
+
+</div>
+</body>
+</html>
