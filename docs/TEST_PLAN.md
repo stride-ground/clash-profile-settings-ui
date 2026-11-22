@@ -7,19 +7,23 @@
 | `LoadDoc`/`Model` | 完整 profile 解析；缺 listeners/proxy-groups 键；空文件；带 BOM；非法 YAML 报错 |
 | `Apply`+`Marshal` 往返 | 改 listener 后 rules/dns/注释保留；origIndex 复用同节点；新组含全部必填 key；use/url/interval 零值删 key |
 | `parseFrag` | 行内 `{name:x,...}` 与多行块均可；非 mapping 报错；缺 name 由 Apply 报错 |
-| `Validate` | 表驱动：0.0.0.0→error；重复端口→error；proxy 引用不存在→error；绑单节点→warn；url-test 单成员→info；空 listeners→warn；allow-lan→warn；mixed-port 冲突→error |
+| `Validate` | 表驱动：0.0.0.0→error；重复端口→error；proxy 引用不存在→error；绑单节点→warn；url-test 单成员→info；空 listeners→warn；allow-lan→warn；mixed-port 冲突→error；组循环 A→B→A→error |
 | `Doc.Save` | 生成 `.bak`；新文件直接写；输出无 BOM |
+| `scan`（handler 层） | profiles 子目录命中；目录直含 yaml；递归/空目录返回空列表；mtime 排序取最新 |
 
 ## 2. 端到端（手动清单，验收门执行）
 
-1. `clash-profile-ui.exe` 启动 → 默认浏览器打开 `http://127.0.0.1:<port>`
-2. 文件栏列出本机 CVR profiles → 选现用 profile → 节点/组/listeners 全部显示
-3. 新增 listener：名 prof-x、socks、13001、绑 `出口A` → 该行显示 `socks5://127.0.0.1:13001` 可复制
-4. 编辑产生 error（如改 listen 为 0.0.0.0）→ 校验区实时出现 error；改回消失
-5. 保存 → 提示成功+备份路径+「去 CVR 切换 profile 生效」→ 文件确实更新、`.bak` 存在、注释保留
-6. 新建空白配置 → 粘贴节点 YAML → 建 url-test 组 → 加 listener → 预览 YAML → 保存为 `test-out.yaml` → `mihomo -t -f test-out.yaml` 通过
-7. 端口冲突：`12001` 已有 listener 再加一个 → error
-8. 坏文件：手改坏 YAML → 加载报错含原因，内存态不变
+1. `clash-profile-ui.exe` 启动 → 自动扫描默认 CVR 目录 → 默认浏览器打开已加载最新 profile（傻瓜模式）
+2. 文件栏改 Clash 位置为 profiles 子目录/任意 yaml 目录 → 扫描 → 列表出现 → 自动加载最新
+3. 傻瓜模式：4 环境、环境2 选备用 → 生成并保存 → 文件含 4 listener + `环境2-自动` url-test 组 → 指纹浏览器可填 socks5://127.0.0.1:1200x
+4. 切详细模式：新增 listener 名 prof-x、socks、13001、绑 `出口A` → 该行显示 socks5 地址可复制
+5. 切引导模式：每个区块出现说明文字，内容与大白话一致
+6. 编辑产生 error（listen 改 0.0.0.0）→ 校验区实时出现 error；改回消失
+7. 保存 → 提示成功+备份路径+「去 CVR 切换 profile 生效」→ 文件更新、`.bak` 存在、注释保留
+8. 新建空白配置 → 粘贴节点 YAML → 建 url-test 组 → 加 listener → 预览 YAML → 保存为 `test-out.yaml` → `mihomo -t -f test-out.yaml` 通过
+9. 端口冲突：`12001` 已有 listener 再加一个 → error；组循环 A→B→A → error
+10. 坏文件：手改坏 YAML → 加载报错含原因，内存态不变
+11. 三模式互切：傻瓜生成后切详细可见新条目，详细改完切引导数据不丢
 
 ## 3. 安全/边界
 

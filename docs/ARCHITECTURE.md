@@ -38,13 +38,15 @@ YAML 文件 ──LoadDoc──> yaml.Node 树（完整保留）
 | 方法/路径 | 入参 | 返回 | 说明 |
 |---|---|---|---|
 | GET `/` | — | index.html | embed 静态页 |
-| GET `/api/profiles` | — | `{files:[{name,path,mtime}]}` | 扫描 CVR profiles 目录 |
+| POST `/api/scan` | `{dir}` | `{dir', files:[{name,path,mtime}], model?}` | 目录扫描：先试 `<dir>\profiles\*.yaml`，再试 `<dir>\*.yaml/.yml`；`dir` 为空用默认 CVR 目录；autoload=找到时返回最新一个的 model |
 | POST `/api/load` | `{path}` | `{model, exists}` | 读文件→Model；解析失败 400+原因 |
 | POST `/api/new` | — | `{model}` | 空白配置模板（不绑定路径） |
-| POST `/api/validate` | `{model}` | `{issues:[{level,where,message}]}` | §5 规则校验 + 端口占用探测 |
+| POST `/api/validate` | `{model}` | `{issues:[{level,where,message}]}` | §5 规则校验 + 组环检测 + 端口占用探测 |
 | POST `/api/preview` | `{model}` | `{yaml}` | Apply→Marshal 不落盘 |
 | POST `/api/save` | `{path, model}` | `{ok, backup}` | Apply→备份→写回；失败 400 |
 | GET `/api/state` | — | `{path, model}` | 恢复当前会话（刷新页面用） |
+
+启动流程：`main` 先对默认 CVR 目录跑一次 `/api/scan` 同逻辑 → 有结果则预载最新 profile 到会话态 → UI 打开即已加载（空目录则空态）。
 
 错误一律 `{error: "可读中文原因"}` + 4xx/5xx。
 
@@ -52,9 +54,10 @@ YAML 文件 ──LoadDoc──> yaml.Node 树（完整保留）
 
 - **保真编辑**：选 yaml.v3 Node 树而非 struct 往返——CVR profile 含大量本工具不管理的字段，struct 重编码会丢字段、注释与顺序。代价：代码以 mapGet/mapSet 手动操作 Node。
 - **写回策略**：先 `path+".bak"` 复制原文件再覆盖写；无 BOM UTF-8；`yaml.Encoder` 缩进 2。
-- **校验在服务端**：`Validate` 是唯一规则源，UI 只展示——保证保存/预览/前端提示三者一致。
+- **校验在服务端**：`Validate` 是唯一规则源，UI 只展示——保证保存/预览/前端提示三者一致。含组引用成环检测（DFS，error 级）。
 - **端口占用探测**：`net.DialTimeout(127.0.0.1:port, 300ms)`，仅 info 级（本机跑着 mihomo 属正常）。
-- **flags**：`-addr`（默认 `127.0.0.1:18630`，占用时顺延最多 20 端口）、`-file`（启动即加载）、`-no-browser`。
+- **傻瓜模式在客户端生成**：向导产出普通 listeners+groups 合入当前 Model（同名覆盖），随后走统一的 validate→save 路径——后端无感知，三模式编辑同一份数据。
+- **flags**：`-addr`（默认 `127.0.0.1:18630`，占用时顺延最多 20 端口）、`-file`（启动即加载指定文件，优先于自动扫描）、`-no-browser`。
 
 ## 5. 安全
 

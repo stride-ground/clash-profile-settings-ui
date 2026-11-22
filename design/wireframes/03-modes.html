@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>线框 03 — 三模式（傻瓜 / 详细 / 引导）</title>
+<style>
+  * { box-sizing: border-box; margin: 0; }
+  body { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; background:#f5f5f5; color:#222; padding:16px; }
+  .page { max-width:1180px; margin:0 auto 40px; }
+  h2 { font-size:14px; margin:24px 0 8px; color:#444; }
+  header { display:flex; align-items:center; gap:12px; padding:10px 14px; background:#fff; border:1px solid #bbb; }
+  header h1 { font-size:17px; font-weight:600; }
+  .modes { display:flex; border:1px solid #777; border-radius:4px; overflow:hidden; }
+  .mbtn { border:none; background:#fff; padding:5px 14px; font-size:13px; }
+  .mbtn.on { background:#ddd; font-weight:700; box-shadow:inset 0 0 0 1px #555; }
+  section { margin-top:12px; background:#fff; border:1px solid #bbb; }
+  .sec-h { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px dashed #bbb; font-weight:600; font-size:14px; }
+  .sec-h .sp { margin-left:auto; font-weight:400; font-size:12px; color:#666; }
+  .row { display:flex; gap:10px; align-items:center; padding:10px 14px; flex-wrap:wrap; }
+  input, select { border:1px solid #999; background:#fff; padding:4px 6px; font-size:13px; }
+  .btn { display:inline-block; border:1px solid #888; background:#eee; padding:4px 12px; font-size:13px; border-radius:3px; }
+  .btn.primary { background:#ddd; border-color:#555; font-weight:600; }
+  .btn.sm { padding:1px 8px; font-size:12px; }
+  .btn.big { padding:10px 26px; font-size:15px; }
+  .note { color:#555; font-size:12px; }
+  .mono { font-family:Consolas, monospace; font-size:12px; }
+  .step { border:1px solid #999; margin:12px 14px; }
+  .step-h { background:#eee; padding:8px 12px; font-weight:600; font-size:14px; }
+  .step-h .n { display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; border-radius:50%; border:1.5px solid #555; margin-right:8px; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { border:1px dashed #bbb; padding:6px 8px; text-align:left; }
+  th { background:#eee; font-weight:600; }
+  .help { background:#f0f0f0; border-left:4px solid #999; padding:8px 12px; font-size:12.5px; color:#333; margin:8px 14px; line-height:1.7; }
+  .summary { margin:10px 14px; padding:10px; border:1px dashed #888; font-size:13px; line-height:1.8; }
+  .marker { display:inline-block; width:16px; height:16px; line-height:16px; text-align:center; border:1px solid #555; border-radius:50%; font-size:11px; font-weight:700; background:#fff; }
+  .legend { margin-top:14px; padding:10px 14px; background:#fff; border:1px dashed #888; font-size:12.5px; line-height:1.9; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h2>模式切换器（三模式共用顶部文件栏；切换模式不清空已编辑内容）</h2>
+<header>
+  <h1>Clash 出站配置器</h1>
+  <nav class="modes">
+    <button class="mbtn on">傻瓜模式</button>
+    <button class="mbtn">详细模式</button>
+    <button class="mbtn">引导模式</button>
+  </nav>
+</header>
+<div class="help" style="margin:8px 0 0">
+  <b>傻瓜模式</b>：只想"每个浏览器窗口走不同节点"，3 步填完直接用。<br>
+  <b>详细模式</b>：当前线框 01 的完整表格（懂 mihomo 概念的人用）。<br>
+  <b>引导模式</b>：和详细模式相同的界面，但每个字段下面常驻大白话说明。
+</div>
+
+<h2>模式 1 — 傻瓜模式（推荐默认入口）</h2>
+
+<div class="step">
+  <div class="step-h"><span class="n">1</span>要开几个浏览器环境？</div>
+  <div class="row">
+    环境数量 <input value="4" style="width:60px">
+    起始端口 <input value="12001" style="width:80px">
+    <span class="note">端口自动连号：12001、12002、12003、12004 <span class="marker">1</span></span>
+  </div>
+</div>
+
+<div class="step">
+  <div class="step-h"><span class="n">2</span>每个环境走哪个节点？</div>
+  <table>
+    <tr><th style="width:90px">环境</th><th style="width:80px">端口</th><th>首选节点</th><th>备用节点（可选：首选挂了自动换）</th><th style="width:200px">指纹浏览器填</th></tr>
+    <tr>
+      <td>环境 1</td><td class="mono">12001</td>
+      <td><select style="width:95%"><option>VPS-1-Reality</option><option>（节点列表）</option></select></td>
+      <td><select style="width:95%"><option>（不设置）</option><option>VPS-2-Reality</option></select></td>
+      <td class="mono">socks5://127.0.0.1:12001 <button class="btn sm">复制</button></td>
+    </tr>
+    <tr>
+      <td>环境 2</td><td class="mono">12002</td>
+      <td><select style="width:95%"><option>VPS-2-Reality</option></select></td>
+      <td><select style="width:95%"><option>VPS-2-Hy2</option></select></td>
+      <td class="mono">socks5://127.0.0.1:12002 <button class="btn sm">复制</button></td>
+    </tr>
+    <tr>
+      <td>环境 3</td><td class="mono">12003</td>
+      <td><select style="width:95%"><option>US-05-vless</option></select></td>
+      <td><select style="width:95%"><option>（不设置）</option></select></td>
+      <td class="mono">socks5://127.0.0.1:12003 <button class="btn sm">复制</button></td>
+    </tr>
+    <tr>
+      <td>环境 4</td><td class="mono">12004</td>
+      <td><select style="width:95%"><option>JP-01-ss2022</option></select></td>
+      <td><select style="width:95%"><option>（不设置）</option></select></td>
+      <td class="mono">socks5://127.0.0.1:12004 <button class="btn sm">复制</button></td>
+    </tr>
+  </table>
+  <div class="row note" style="padding-top:6px"><span class="marker">2</span> 填了备用节点的行 → 自动生成「环境N-自动」url-test 组（首选+备用）并绑到端口；不填则端口直接绑首选节点</div>
+</div>
+
+<div class="step">
+  <div class="step-h"><span class="n">3</span>确认并保存</div>
+  <div class="summary">
+    将创建：<b>4 个出口端口</b>（12001–12004，仅本机可用）＋ <b>1 个自动容灾组</b>（环境2-自动：VPS-2-Reality / VPS-2-Hy2）。<br>
+    已有同名端口/组会被替换更新，其余配置（订阅节点、规则）不受影响。 <span class="marker">3</span>
+  </div>
+  <div class="row"><button class="btn primary big">生成并保存</button>
+    <span class="note">保存后：指纹浏览器各 Profile 填对应 socks5 地址 → 去 Clash Verge 切一次 profile 生效</span></div>
+</div>
+
+<h2>模式 3 — 引导模式 = 详细模式 + 常驻大白话说明（示例：出口端口区）</h2>
+
+<section>
+  <div class="sec-h">出口端口（listeners） <span class="sp">每个指纹浏览器 Profile 占一行</span> <button class="btn sm">+ 添加端口</button></div>
+  <div class="help">这里是"本机代理端口"清单：<b>一行 = 一个出口</b>。指纹浏览器的每个 Profile 填其中一行的 socks5 地址，它的流量就固定走这行绑的节点/组。互相之间完全独立、同时在线。 <span class="marker">4</span></div>
+  <table>
+    <tr><th>名称</th><th>类型</th><th>监听</th><th>端口</th><th>绑定目标</th><th>浏览器代理地址</th></tr>
+    <tr><td><input value="prof-us1"></td><td><select><option>socks</option></select></td><td><input value="127.0.0.1"></td><td><input value="12001"></td><td><input value="VPS-1-Reality"></td><td class="mono">socks5://… <button class="btn sm">复制</button></td></tr>
+  </table>
+  <div class="help">
+    <b>名称</b>：随便起，自己认得就行（如"环境1"）。<br>
+    <b>类型</b>：选 <b>socks</b> 即可；想让同一端口同时支持 http 代理选 mixed。<br>
+    <b>监听</b>：固定 <b>127.0.0.1</b>——只允许本机软件连。改成 0.0.0.0 会把没密码的代理暴露给局域网所有设备，别改。<br>
+    <b>端口</b>：12001 起随便挑，别和别的软件重复（页面上方会自动检查冲突）。<br>
+    <b>绑定目标</b>：这行的流量最终从哪个节点/组出去。直接填节点名最快；填 url-test 组可以自动容灾（推荐）。
+  </div>
+</section>
+
+<div class="legend">
+<b>交互标注</b><br>
+<span class="marker">1</span> 起始端口/数量改了，第 2 步表格行数与端口自动重排；与现有 listener 冲突时校验区报错<br>
+<span class="marker">2</span> 傻瓜模式产出的就是普通 listeners+proxy-groups——生成后切到详细模式能看到并继续改，三种模式编辑同一份数据，不会互相冲突<br>
+<span class="marker">3</span> 「生成并保存」= 把第 2 步结果合并进当前配置 → 校验（无 error）→ 写文件+备份；有 error 则列出原因不落盘<br>
+<span class="marker">4</span> 引导模式所有区块都有这种说明（文件栏、校验、组、节点、常规、YAML 预览），实现上同一组件多渲染 help 文本
+</div>
+
+</div>
+</body>
+</html>
