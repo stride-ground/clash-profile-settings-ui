@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -12,12 +13,13 @@ import (
 // ---------- 与前端交互的模型 ----------
 
 type ProxyEntry struct {
-	OrigIndex *int   `json:"origIndex,omitempty"` // 指向原文件 proxies[i]，保留完整字段
-	Name      string `json:"name"`
-	Type      string `json:"type"`
-	Server    string `json:"server"`
-	Port      int    `json:"port"`
-	Raw       string `json:"raw,omitempty"` // 新节点：粘贴的 mihomo YAML 片段
+	OrigIndex *int           `json:"origIndex,omitempty"` // 指向原文件 proxies[i]，保留完整字段
+	Name      string         `json:"name"`
+	Type      string         `json:"type"`
+	Server    string         `json:"server"`
+	Port      int            `json:"port"`
+	Raw       string         `json:"raw,omitempty"`  // 新节点：粘贴的 mihomo YAML 片段
+	Node      map[string]any `json:"node,omitempty"` // 新节点：链接解析的结构化产物（优先于 Raw）
 }
 
 type GroupEntry struct {
@@ -312,9 +314,15 @@ func (d *Doc) Apply(m *Model) error {
 			}
 			return fmt.Errorf("节点 origIndex=%d 越界", *p.OrigIndex)
 		}
-		n, err := parseFrag(p.Raw)
-		if err != nil {
-			return fmt.Errorf("新节点 YAML 解析失败: %w", err)
+		var n *yaml.Node
+		if p.Node != nil {
+			n = enc(p.Node)
+		} else {
+			var err error
+			n, err = parseFrag(p.Raw)
+			if err != nil {
+				return fmt.Errorf("新节点 YAML 解析失败: %w", err)
+			}
 		}
 		if getStr(n, "name") == "" {
 			return fmt.Errorf("新节点缺少 name 字段")
@@ -384,7 +392,27 @@ func (d *Doc) Apply(m *Model) error {
 		}
 		mapSet(d.mapping, "rules", enc([]string{"MATCH," + target}))
 	}
+	// 索引随重建的序列刷新，保证后续 origIndex 一致
+	d.proxies = seqItems(d.mapping, "proxies")
+	d.groups = seqItems(d.mapping, "proxy-groups")
+	d.listens = seqItems(d.mapping, "listeners")
 	return nil
+}
+
+// Clone 深拷贝文档（preview 不落盘、不改当前会话态）
+func (d *Doc) Clone() *Doc {
+	root := cloneNode(d.doc)
+	nd := &Doc{path: d.path, exists: d.exists, doc: root}
+	if len(root.Content) > 0 && root.Content[0].Kind == yaml.MappingNode {
+		nd.mapping = root.Content[0]
+	} else {
+		nd.mapping = newMapNode()
+		root.Content = []*yaml.Node{nd.mapping}
+	}
+	nd.proxies = seqItems(nd.mapping, "proxies")
+	nd.groups = seqItems(nd.mapping, "proxy-groups")
+	nd.listens = seqItems(nd.mapping, "listeners")
+	return nd
 }
 
 func (d *Doc) Marshal() ([]byte, error) {
@@ -422,6 +450,11 @@ func Validate(m *Model, portBusy func(int) bool) []Issue {
 		issues = append(issues, Issue{level, where, msg})
 	}
 
+	// mihomo 内建出站，可作为组成员/绑定目标
+	builtins := map[string]bool{
+		"DIRECT": true, "REJECT": true, "REJECT-DROP": true,
+		"PASS": true, "GLOBAL": true, "COMPATIBLE": true,
+	}
 	names := map[string]bool{}
 	for _, p := range m.Proxies {
 		if p.Name != "" {
@@ -454,7 +487,7 @@ func Validate(m *Model, portBusy func(int) bool) []Issue {
 			add("warn", w, "组内无成员节点")
 		}
 		for _, p := range g.Proxies {
-			if !names[p] && !groupNames[p] {
+			if !names[p] && !groupNames[p] && !builtins[p] {
 				add("error", w, fmt.Sprintf("成员 %q 不存在于节点或其他组", p))
 			}
 		}
@@ -468,6 +501,42 @@ func Validate(m *Model, portBusy func(int) bool) []Issue {
 		}
 		if g.Type == "url-test" && len(g.Proxies) == 1 {
 			add("info", w, "url-test 组只有 1 个成员，自动容灾不会生效")
+		}
+	}
+
+	// 组引用成环检测：A→B→A 会让 mihomo 解析/选路异常
+	adj := map[string][]string{}
+	for _, g := range m.Groups {
+		for _, p := range g.Proxies {
+			if groupNames[p] {
+				adj[g.Name] = append(adj[g.Name], p)
+			}
+		}
+	}
+	state := map[string]int{} // 1=在栈中 2=已完成
+	var stack []string
+	var walk func(n string)
+	walk = func(n string) {
+		state[n] = 1
+		stack = append(stack, n)
+		for _, next := range adj[n] {
+			if state[next] == 1 {
+				i := len(stack) - 1
+				for i >= 0 && stack[i] != next {
+					i--
+				}
+				cycle := append(append([]string{}, stack[i:]...), next)
+				add("error", "策略组:"+next, "组引用形成循环 "+strings.Join(cycle, " → "))
+			} else if state[next] == 0 {
+				walk(next)
+			}
+		}
+		stack = stack[:len(stack)-1]
+		state[n] = 2
+	}
+	for _, g := range m.Groups {
+		if state[g.Name] == 0 {
+			walk(g.Name)
 		}
 	}
 
@@ -493,9 +562,9 @@ func Validate(m *Model, portBusy func(int) bool) []Issue {
 		}
 		if l.Proxy == "" {
 			add("info", w, "未绑定 proxy，流量将走 rules 全局分流（指纹浏览器场景建议绑定固定节点/组）")
-		} else if !names[l.Proxy] {
+		} else if !names[l.Proxy] && !builtins[l.Proxy] {
 			add("error", w, fmt.Sprintf("绑定的 %q 不存在于节点或策略组", l.Proxy))
-		} else if !groupNames[l.Proxy] {
+		} else if !groupNames[l.Proxy] && !builtins[l.Proxy] {
 			add("warn", w, "绑定的是单节点；建议指向 url-test 组实现单节点故障自动切换")
 		}
 		if l.Port == m.MixedPort && m.MixedPort != 0 {

@@ -13,10 +13,9 @@
 | 拉依赖 | `go mod tidy` | 已验证 |
 | 格式化 | `gofmt -w .` / 检查 `gofmt -l .` | 已验证（输出为空） |
 | 静态检查 | `go vet ./...` | 已验证通过 |
-| 编译检查 | `go build ./...` | 进行中：缺 main（后续文件补齐后应通过） |
-| 运行 | `go run .` 或 `.\clash-profile-ui.exe` | 待实现 |
-| 构建 | `go build -o clash-profile-ui.exe .` | 待实现 |
-| 测试 | `go test ./...` | 待实现（见 TEST_PLAN） |
+| 测试 | `go test ./...` | 已验证通过（mihomo/shareparse 表驱动用例） |
+| 构建 | `go build -o clash-profile-ui.exe .` | 已验证（~11MB 单文件） |
+| 运行 | `.\clash-profile-ui.exe`（可选 `-addr`/`-file`/`-no-browser`） | 已验证：启动自动扫描 CVR 目录并预载 profile |
 
 ## 目录约定
 

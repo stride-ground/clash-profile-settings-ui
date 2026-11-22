@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Clash 出站配置器</title>
+<style>
+  :root { --bd:#c9ced6; --bg:#f2f4f7; --card:#fff; --txt:#1f2329; --mut:#6b7280;
+          --pri:#2563eb; --err:#b91c1c; --warn:#92400e; --info:#4b5563; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Segoe UI","Microsoft YaHei",sans-serif; background:var(--bg); color:var(--txt); font-size:14px; }
+  .page { max-width:1180px; margin:0 auto; padding:14px 16px 60px; }
+  header { display:flex; align-items:center; gap:14px; padding:10px 14px; background:var(--card); border:1px solid var(--bd); border-radius:8px; position:sticky; top:8px; z-index:9; }
+  header h1 { font-size:16px; margin:0; }
+  .modes { display:flex; border:1px solid var(--bd); border-radius:6px; overflow:hidden; }
+  .mbtn { border:none; background:#fff; padding:6px 16px; font-size:13px; cursor:pointer; color:var(--txt); }
+  .mbtn.on { background:var(--pri); color:#fff; font-weight:600; }
+  .dirty { margin-left:auto; font-size:12px; color:var(--warn); display:none; }
+  .dirty.on { display:block; }
+  section, .task { margin-top:12px; background:var(--card); border:1px solid var(--bd); border-radius:8px; }
+  .sec-h { display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid var(--bd); font-weight:600; font-size:14px; }
+  .sec-h .sp { margin-left:auto; font-weight:400; font-size:12px; color:var(--mut); }
+  .row { display:flex; gap:10px; align-items:center; padding:10px 14px; flex-wrap:wrap; }
+  .col { display:flex; flex-direction:column; gap:6px; }
+  input[type=text], input[type=number], select, textarea { border:1px solid var(--bd); background:#fff; padding:5px 8px; font-size:13px; border-radius:5px; font-family:inherit; color:var(--txt); }
+  input:focus, select:focus, textarea:focus { outline:2px solid #93c5fd; border-color:var(--pri); }
+  .btn { border:1px solid var(--bd); background:#fff; padding:5px 14px; font-size:13px; border-radius:5px; cursor:pointer; color:var(--txt); }
+  .btn:hover { background:#f3f4f6; }
+  .btn.primary { background:var(--pri); border-color:var(--pri); color:#fff; font-weight:600; }
+  .btn.primary:hover { background:#1d4ed8; }
+  .btn.sm { padding:2px 9px; font-size:12px; }
+  .btn.big { padding:9px 26px; font-size:15px; }
+  .btn:disabled { opacity:.45; cursor:not-allowed; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { border-bottom:1px solid #e5e7eb; padding:6px 8px; text-align:left; vertical-align:middle; }
+  th { background:#f9fafb; font-weight:600; color:#374151; font-size:12px; }
+  .mono { font-family:Consolas,monospace; font-size:12px; }
+  .note { color:var(--mut); font-size:12px; }
+  .help { background:#eff6ff; border-left:4px solid var(--pri); padding:9px 13px; font-size:12.5px; margin:9px 14px; line-height:1.75; border-radius:0 6px 6px 0; }
+  .banner { display:none; margin-top:12px; padding:9px 14px; border:1px solid #fca5a5; background:#fef2f2; color:var(--err); border-radius:6px; font-size:13px; }
+  .banner.on { display:block; }
+  #toast { position:fixed; top:14px; right:14px; z-index:99; display:none; background:#065f46; color:#fff; padding:10px 16px; border-radius:7px; font-size:13px; box-shadow:0 4px 14px rgba(0,0,0,.25); max-width:520px; line-height:1.6; }
+  .issue { padding:6px 14px; font-size:12.5px; border-bottom:1px solid #f0f0f0; cursor:pointer; }
+  .issue:last-child { border-bottom:none; }
+  .issue:hover { background:#f9fafb; }
+  .issue.e { border-left:4px solid var(--err); }
+  .issue.w { border-left:4px solid #d97706; }
+  .issue.i { border-left:4px solid #9ca3af; color:var(--mut); }
+  .issue.ok { border-left:4px solid #059669; color:#065f46; cursor:default; }
+  .del { border:1px solid var(--bd); background:#fff; padding:1px 7px; font-size:12px; border-radius:4px; cursor:pointer; }
+  .del:hover { background:#fef2f2; color:var(--err); border-color:#fca5a5; }
+  .chk { border:1px solid var(--bd); border-radius:6px; padding:8px 10px; max-height:140px; overflow:auto; column-width:200px; font-size:12.5px; }
+  .chk label { display:block; padding:1px 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .radio-card { display:inline-block; border:1px solid var(--bd); border-radius:7px; padding:9px 13px; margin:4px 10px 4px 0; font-size:12.5px; width:295px; vertical-align:top; cursor:pointer; background:#fff; }
+  .radio-card.on { outline:2px solid var(--pri); background:#eff6ff; }
+  .radio-card input { display:none; }
+  .task-h { background:#f9fafb; padding:9px 14px; font-weight:600; font-size:14px; border-bottom:1px solid var(--bd); border-radius:8px 8px 0 0; }
+  .task-h .n { display:inline-block; width:20px; height:20px; line-height:20px; text-align:center; border-radius:50%; background:var(--pri); color:#fff; font-size:12px; margin-right:8px; }
+  .task-h .why { font-weight:400; font-size:12px; color:var(--mut); margin-left:10px; }
+  .err-line { color:var(--err); font-size:12px; padding:3px 14px; }
+  .preview-bar { display:flex; align-items:center; gap:10px; padding:8px 14px; border-bottom:1px dashed var(--bd); font-size:13px; font-weight:600; }
+  .pill { display:inline-block; border-radius:9px; padding:0 8px; font-size:11px; margin-left:6px; background:#e5e7eb; color:#374151; }
+  pre#yamlOut { margin:10px 14px; padding:12px; font-size:12px; background:#0f172a; color:#cbd5e1; border-radius:7px; max-height:420px; overflow:auto; white-space:pre; }
+  .empty { padding:46px 20px; text-align:center; color:var(--mut); }
+  .empty .big { font-size:16px; color:var(--txt); margin-bottom:10px; font-weight:600; }
+  .hidden { display:none !important; }
+  .copy-btn { border:none; background:none; color:var(--pri); cursor:pointer; font-size:12px; padding:0 4px; }
+  .scrollx { overflow-x:auto; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<header>
+  <h1>Clash 出站配置器</h1>
+  <nav class="modes" id="modes">
+    <button class="mbtn" data-mode="easy">新手任务</button>
+    <button class="mbtn" data-mode="adv">详细模式</button>
+    <button class="mbtn" data-mode="guide">详细+说明</button>
+  </nav>
+  <span class="dirty" id="dirty">● 有未保存修改</span>
+</header>
+
+<div class="banner" id="banner"></div>
+<div id="toast"></div>
+
+<!-- 文件栏 -->
+<section>
+  <div class="row">
+    <b>Clash 位置</b>
+    <input type="text" id="clashDir" style="flex:1;min-width:280px" placeholder="Clash Verge 数据目录 / profiles 目录 / 任意含 yaml 的目录">
+    <button class="btn primary" id="btnScan">扫描</button>
+    <span class="note">启动时已自动扫描默认位置并加载最新 profile</span>
+  </div>
+  <div class="row">
+    <b>配置文件</b>
+    <select id="fileSelect" style="min-width:320px"><option value="">— 扫描后显示 —</option></select>
+    <span class="note">或</span>
+    <input type="text" id="filePath" style="flex:1;min-width:220px" placeholder="手填 YAML 路径（加载 / 保存目标）">
+    <button class="btn" id="btnLoad">加载</button>
+    <button class="btn" id="btnNew">新建空白</button>
+    <button class="btn primary" id="btnSave">保存</button>
+    <button class="btn" id="btnPreview">YAML 预览</button>
+  </div>
+  <div class="row note" style="padding-top:0">当前：<span class="mono" id="curPath">（未加载）</span></div>
+</section>
+
+<!-- 校验区 -->
+<section id="secIssues" class="hidden">
+  <div class="sec-h">校验 <span class="sp" id="issueSummary"></span></div>
+  <div id="issueList"></div>
+</section>
+
+<!-- 空态 -->
+<section id="empty" class="hidden">
+  <div class="empty">
+    <div class="big">尚未加载配置</div>
+    <div>从上方下拉选择扫描到的 Clash Verge profile，或粘贴路径后点「加载」；<br>「新建空白」从零开始（自带 mixed-port / rules 等最小字段）。</div>
+    <div style="margin-top:14px"><button class="btn primary" id="btnNew2">新建空白配置</button></div>
+  </div>
+</section>
+
+<!-- ========== 新手任务 ========== -->
+<div id="modeEasy" class="hidden">
+
+  <div class="task">
+    <div class="task-h"><span class="n">1</span>把你的节点加进来<span class="why">— 有 vless:// / hysteria2:// 链接就直接粘，一行一个</span></div>
+    <div class="row" style="align-items:flex-start">
+      <textarea id="linkBox" rows="4" style="flex:1;font-family:Consolas,monospace;font-size:12px" placeholder="vless://uuid@server:port?security=reality&pbk=...#节点名&#10;hysteria2://password@server:port?sni=...#节点名"></textarea>
+      <div class="col">
+        <button class="btn primary" id="btnParseLinks">解析链接</button>
+        <button class="btn sm" id="btnYamlMode">改用 YAML 片段</button>
+      </div>
+    </div>
+    <div id="linkErrors"></div>
+    <div id="linkPreview" class="hidden">
+      <div class="preview-bar">解析结果（名称可改）<span class="pill" id="linkCount"></span></div>
+      <div class="scrollx"><table id="linkTable">
+        <tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th></tr>
+      </table></div>
+      <div class="row"><button class="btn primary" id="btnAddLinks">加入节点列表</button>
+        <span class="note">同名节点会询问覆盖或自动改名</span></div>
+    </div>
+    <div id="yamlBox" class="row hidden" style="align-items:flex-start">
+      <textarea id="yamlFrag" rows="3" style="flex:1;font-family:Consolas,monospace;font-size:12px" placeholder='粘贴 mihomo 节点 YAML，如 {name: x, type: vless, server: 1.2.3.4, port: 443, ...}'></textarea>
+      <button class="btn" id="btnAddYaml">添加节点</button>
+    </div>
+    <div id="yamlErr" class="err-line hidden"></div>
+
+    <div class="sec-h" style="border-top:1px solid var(--bd)">已有节点 <span class="sp" id="easyNodeCount"></span></div>
+    <div class="row"><input type="text" id="easyNodeFilter" placeholder="过滤节点名 / 类型 / 服务器" style="width:300px"></div>
+    <div class="scrollx" style="max-height:260px;overflow:auto"><table id="easyNodeTable">
+      <tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th><th></th></tr>
+    </table></div>
+  </div>
+
+  <div class="task">
+    <div class="task-h"><span class="n">2</span>把节点组成「出口」<span class="why">— 组 = 给几个节点起个名字，端口绑组就能自动换节点</span></div>
+    <div class="row" style="align-items:flex-start"><div>
+      <label class="radio-card" data-gtype="url-test"><input type="radio" name="gtype"><b>● 自动切换</b>（url-test）<br>定时测延迟，自动用最快的；正在用的挂了自动换。<b>推荐</b></label>
+      <label class="radio-card" data-gtype="select"><input type="radio" name="gtype"><b>○ 手动选择</b>（select）<br>组里放备选，用哪个由你在 Clash Verge 代理页手动点。</label>
+      <label class="radio-card" data-gtype="fallback"><input type="radio" name="gtype"><b>○ 备用顺序</b>（fallback）<br>按列表顺序用第一个能连上的，坏了顺延。</label>
+    </div></div>
+    <div class="row">
+      组名 <input type="text" id="gfName" style="width:180px" placeholder="如：我的自动组">
+      测速间隔 <input type="number" id="gfInterval" value="300" style="width:70px"> 秒
+      <span class="note">测速地址默认 generate_204，一般不用改</span>
+    </div>
+    <div class="row" style="align-items:flex-start"><div style="flex:1">
+      <div class="note">成员（勾选放进组的节点）：<input type="text" id="gfFilter" placeholder="过滤" style="width:140px"></div>
+      <div class="chk" id="gfMembers"></div>
+    </div></div>
+    <div class="row"><button class="btn primary" id="btnGroupApply">创建 / 更新组</button>
+      <button class="btn sm" id="btnGroupReset">清空表单</button>
+      <span class="note">同名组 = 更新成员与参数</span></div>
+
+    <div class="sec-h" style="border-top:1px solid var(--bd)">已有的组 <span class="sp" id="easyGroupCount"></span></div>
+    <div class="scrollx"><table id="easyGroupTable">
+      <tr><th>组名</th><th>类型</th><th>成员数</th><th>被哪些端口用</th><th></th></tr>
+    </table></div>
+  </div>
+
+  <div class="task">
+    <div class="task-h"><span class="n">3</span>给每个浏览器环境一个端口<span class="why">— 一行一个端口；指纹浏览器 Profile 填对应 socks5 地址</span></div>
+    <div class="scrollx"><table id="easyPortTable">
+      <tr><th style="width:100px">端口</th><th>出口绑到（节点或组）</th><th style="width:230px">指纹浏览器填这个</th><th style="width:40px"></th></tr>
+    </table></div>
+    <div class="row"><button class="btn sm" id="btnAddPort">+ 加一个端口</button>
+      <span class="note">类型默认 socks、监听固定 127.0.0.1（要改去详细模式）</span></div>
+    <div class="row"><button class="btn primary big" id="btnSaveEasy">保存到 Clash Verge</button>
+      <span class="note">保存后：指纹浏览器填 socks5 地址 → 去 Clash Verge 切一次 profile 生效</span></div>
+  </div>
+</div>
+
+<!-- ========== 详细模式 / 详细+说明 ========== -->
+<div id="modeAdv" class="hidden">
+
+  <section id="secListeners">
+    <div class="sec-h">出口端口（listeners） <span class="sp">每个指纹浏览器 Profile 占一行</span> <button class="btn sm" id="btnAddListener">+ 添加端口</button></div>
+    <div class="help ghelp">一行 = 一个本机代理出口。指纹浏览器各 Profile 填该行的 socks5 地址，流量就固定走绑定的节点/组，互不干扰、同时在线。<b>监听</b>固定 127.0.0.1（只许本机连；0.0.0.0 会把无密码代理暴露给局域网）。<b>绑定目标</b>填节点名或策略组名——绑 url-test 组可自动容灾。</div>
+    <div class="scrollx"><table id="advListenerTable">
+      <tr><th style="width:130px">名称</th><th style="width:84px">类型</th><th style="width:110px">监听</th><th style="width:80px">端口</th><th>绑定目标（节点/策略组）</th><th style="width:215px">浏览器代理地址</th><th style="width:40px"></th></tr>
+    </table></div>
+    <datalist id="targets"></datalist>
+  </section>
+
+  <section id="secGroups">
+    <div class="sec-h">策略组（proxy-groups） <span class="sp">listener 推荐绑 url-test 组</span> <button class="btn sm" id="btnAddGroup">+ 添加组</button></div>
+    <div class="help ghelp"><b>组干嘛用？</b>把几个节点打包起名。url-test 自动测速选最快、断了自动换（推荐）；select 在 CVR 代理页手动选；fallback 按顺序用第一个活的；load-balance 多节点分摊；relay 串联转发。<b>url/interval</b>是测速目标与周期（秒）。<b>use</b>引用订阅 provider 名（一般留空）。</div>
+    <div id="advGroupCards"></div>
+  </section>
+
+  <section id="secNodes">
+    <div class="sec-h">节点（proxies） <span class="sp" id="advNodeCount"></span></div>
+    <div class="help ghelp">订阅来的节点列表。uuid/密钥/流控等字段不在这里编辑（原样保留）；新增建议去「新手任务」粘 vless:// / hy2:// 链接，或在下方粘 YAML 片段。删被引用的节点会在校验区报错。</div>
+    <div class="row"><input type="text" id="advNodeFilter" placeholder="过滤：名称/类型/服务器" style="width:300px"><span class="note" id="advNodeShown"></span></div>
+    <div class="scrollx" style="max-height:300px;overflow:auto"><table id="advNodeTable">
+      <tr><th>名称</th><th style="width:100px">类型</th><th>服务器</th><th style="width:80px">端口</th><th style="width:40px"></th></tr>
+    </table></div>
+    <div class="row" style="align-items:flex-start">
+      <textarea id="advYamlFrag" rows="2" style="flex:1;font-family:Consolas,monospace;font-size:12px" placeholder='粘贴 mihomo 节点 YAML 片段新增'></textarea>
+      <button class="btn" id="btnAdvAddYaml">添加节点</button>
+    </div>
+    <div id="advYamlErr" class="err-line hidden"></div>
+  </section>
+
+  <section id="secGeneral">
+    <div class="sec-h">常规 <span class="sp">本场景只用本地端口</span></div>
+    <div class="help ghelp"><b>mixed-port</b>：Clash 全局混合入口端口（CVR 默认 7897），给"不设单独端口"的软件用。<b>allow-lan</b>：别开——开了局域网设备都能用你的代理。<b>mode</b>：rule 按规则分流（常规）；global 全走代理；direct 全直连。系统代理/TUN 在 CVR 设置里关，本工具不接管。</div>
+    <div class="row">
+      mixed-port <input type="number" id="gMixedPort" style="width:80px">
+      allow-lan <input type="checkbox" id="gAllowLan">
+      mode <select id="gMode"><option>rule</option><option>global</option><option>direct</option></select>
+    </div>
+  </section>
+</div>
+
+<!-- YAML 预览（三模式共用） -->
+<section id="secYaml">
+  <div class="sec-h">YAML 预览 <span class="sp">保存前核对最终产出</span>
+    <button class="btn sm" id="btnYamlRefresh">刷新</button>
+    <button class="btn sm" id="btnYamlCopy">复制</button>
+    <button class="btn sm" id="btnYamlDl">下载 .yaml</button></div>
+  <pre id="yamlOut">（点击「刷新」生成当前配置的 YAML）</pre>
+</section>
+
+</div>
+
+<script>
+'use strict';
+/* ============ 状态 ============ */
+const S = {
+  path: '', model: null, dirty: false,
+  scanDir: '', files: [],
+  mode: localStorage.getItem('cps.mode') || 'easy',
+  pending: [],            // 任务①解析出的待加入节点
+  gtype: 'url-test',      // 任务②选中的组类型
+  nodeFilter: '', advNodeFilter: '', gfFilter: '',
+};
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+async function api(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body ?? {})});
+  const j = await r.json().catch(() => ({error: '响应解析失败'}));
+  if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status));
+  return j;
+}
+
+/* ============ 通用 UI ============ */
+function banner(msg) {
+  const b = $('banner');
+  if (!msg) { b.className = 'banner'; b.textContent = ''; return; }
+  b.textContent = '✕ ' + msg; b.className = 'banner on';
+}
+let toastTimer = null;
+function toast(html) {
+  const t = $('toast');
+  t.innerHTML = html; t.style.display = 'block';
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', 7000);
+}
+function markDirty() {
+  S.dirty = true; $('dirty').className = 'dirty on';
+  scheduleValidate();
+}
+function clearDirty() { S.dirty = false; $('dirty').className = 'dirty'; }
+function copyText(txt, btn) {
+  navigator.clipboard.writeText(txt).then(() => {
+    const o = btn.textContent; btn.textContent = '已复制';
+    setTimeout(() => btn.textContent = o, 1200);
+  });
+}
+
+/* ============ 校验 ============ */
+let vTimer = null;
+function scheduleValidate() {
+  clearTimeout(vTimer);
+  vTimer = setTimeout(runValidate, 500);
+}
+async function runValidate() {
+  if (!S.model) { $('secIssues').classList.add('hidden'); return; }
+  try {
+    const j = await api('/api/validate', {model: S.model});
+    renderIssues(j.issues || []);
+  } catch (e) { /* 校验失败不打扰编辑 */ }
+}
+function renderIssues(issues) {
+  const sec = $('secIssues'), list = $('issueList');
+  sec.classList.remove('hidden');
+  const cnt = {error:0, warn:0, info:0};
+  issues.forEach(i => cnt[i.level]++);
+  $('issueSummary').textContent = issues.length
+    ? `${cnt.error} error · ${cnt.warn} warn · ${cnt.info} info`
+    : '';
+  list.innerHTML = issues.length === 0
+    ? '<div class="issue ok">✓ 未发现问题</div>'
+    : issues.map(i =>
+      `<div class="issue ${i.level[0]}" data-where="${esc(i.where)}">${i.level==='error'?'✕':i.level==='warn'?'!':'i'} [${esc(i.where)}] ${esc(i.message)}</div>`
+    ).join('');
+}
+$('issueList').addEventListener('click', e => {
+  const d = e.target.closest('.issue'); if (!d || d.classList.contains('ok')) return;
+  const w = d.dataset.where;
+  const target = w.startsWith('端口') ? $('modeEasy').classList.contains('hidden') ? 'secListeners' : 'modeEasy'
+               : w.startsWith('策略组') ? 'secGroups' : 'secNodes';
+  document.getElementById(target)?.scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+/* ============ 文件栏 ============ */
+async function doScan() {
+  banner('');
+  try {
+    const j = await api('/api/scan', {dir: $('clashDir').value.trim()});
+    S.scanDir = j.dir; S.files = j.files || [];
+    if (j.dir) $('clashDir').value = j.dir;
+    renderFileSelect();
+    if (j.model) { S.model = j.model; S.path = j.path; clearDirty(); render(); }
+    if (j.loadError) banner('自动加载失败：' + j.loadError);
+    else toast(`扫描到 ${S.files.length} 个配置${j.model ? '，已加载最新' : ''}`);
+  } catch (e) { banner(e.message); }
+}
+function renderFileSelect() {
+  $('fileSelect').innerHTML = '<option value="">— 选择 profile —</option>' +
+    S.files.map(f => `<option value="${esc(f.path)}">${esc(f.name)} — ${esc(f.mtime)}</option>`).join('');
+}
+async function doLoad(path) {
+  banner('');
+  try {
+    const j = await api('/api/load', {path});
+    S.model = j.model; S.path = j.path; clearDirty(); render();
+    toast('已加载 ' + esc(j.path));
+  } catch (e) { banner('加载失败：' + e.message); }
+}
+async function doNew() {
+  banner('');
+  const j = await api('/api/new');
+  S.model = j.model; S.path = ''; clearDirty(); render();
+  toast('已新建空白配置——保存前请在「配置文件」框填目标路径');
+}
+async function doSave() {
+  banner('');
+  if (!S.model) { banner('尚未加载配置'); return; }
+  let path = S.path;
+  if (!path) {
+    path = $('filePath').value.trim();
+    if (!path) { banner('未指定保存路径：请在「配置文件」框填目标路径'); return; }
+  }
+  try {
+    const j = await api('/api/save', {path, model: S.model});
+    S.model = j.model; S.path = j.path; clearDirty(); render();
+    toast(`✓ 已保存 <span class="mono">${esc(j.path)}</span><br>备份 ${esc(j.backup)}<br><b>请到 Clash Verge 切换一次 profile 使配置生效</b>`);
+  } catch (e) { banner('保存失败：' + e.message + '（修改未写入）'); }
+}
+
+/* ============ 渲染入口 ============ */
+function render() {
+  const has = !!S.model;
+  $('empty').classList.toggle('hidden', has);
+  $('modeEasy').classList.toggle('hidden', !(has && S.mode === 'easy'));
+  $('modeAdv').classList.toggle('hidden', !(has && S.mode !== 'easy'));
+  $('curPath').textContent = S.path || (has ? '（未保存的新配置）' : '（未加载）');
+  document.querySelectorAll('#modes .mbtn').forEach(b => b.classList.toggle('on', b.dataset.mode === S.mode));
+  if (!has) { renderIssues([]); return; }
+  if (S.mode === 'easy') renderEasy(); else renderAdv(S.mode === 'guide');
+  document.querySelectorAll('.ghelp').forEach(h => h.classList.toggle('hidden', S.mode !== 'guide'));
+  runValidate();
+}
+document.querySelectorAll('#modes .mbtn').forEach(b => b.onclick = () => {
+  S.mode = b.dataset.mode; localStorage.setItem('cps.mode', S.mode); render();
+});
+
+/* ============ 新手任务 ============ */
+const TYPE_LABEL = {vless:'vless', hysteria2:'hysteria2'};
+
+function proxyNames() { return (S.model?.proxies || []).map(p => p.name).filter(Boolean); }
+function groupNames() { return (S.model?.groups || []).map(g => g.name).filter(Boolean); }
+function allTargets() { return [...groupNames(), ...proxyNames()]; }
+
+function renderEasy() {
+  renderEasyNodes(); renderEasyGroups(); renderEasyPorts();
+}
+
+function renderEasyNodes() {
+  const f = S.nodeFilter.toLowerCase();
+  const rows = S.model.proxies.map((p, i) => ({p, i}))
+    .filter(({p}) => !f || (p.name + p.type + p.server).toLowerCase().includes(f));
+  $('easyNodeCount').textContent = `共 ${S.model.proxies.length} 个`;
+  $('easyNodeTable').innerHTML =
+    '<tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th><th></th></tr>' +
+    rows.map(({p, i}) => `<tr>
+      <td>${esc(p.name)}</td><td>${esc(p.type)}</td><td class="mono">${esc(p.server)}</td><td class="mono">${p.port || ''}</td>
+      <td><button class="del" data-act="delProxy" data-i="${i}">✕</button></td></tr>`).join('');
+}
+
+async function doParseLinks() {
+  banner(''); $('linkErrors').innerHTML = '';
+  const text = $('linkBox').value;
+  if (!text.trim()) { banner('请先粘贴链接'); return; }
+  try {
+    const j = await api('/api/parse-links', {text});
+    S.pending = j.proxies || [];
+    $('linkErrors').innerHTML = (j.errors || []).map(e =>
+      `<div class="err-line">✕ 第 ${e.line} 行：${esc(e.message)}</div>`).join('');
+    $('linkPreview').classList.toggle('hidden', S.pending.length === 0);
+    $('linkCount').textContent = S.pending.length + ' 个节点';
+    $('linkTable').innerHTML = '<tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th></tr>' +
+      S.pending.map((p, i) => `<tr>
+        <td><input type="text" data-pi="${i}" value="${esc(p.name)}" style="width:170px"></td>
+        <td>${esc(p.type)}</td><td class="mono">${esc(p.server)}</td><td class="mono">${p.port}</td></tr>`).join('');
+  } catch (e) { banner(e.message); }
+}
+$('linkTable').addEventListener('input', e => {
+  const i = +e.target.dataset.pi;
+  if (S.pending[i]) { S.pending[i].name = e.target.value; S.pending[i].node.name = e.target.value; }
+});
+function addPendingLinks() {
+  if (!S.pending.length) return;
+  for (const p of S.pending) {
+    const idx = S.model.proxies.findIndex(x => x.name === p.name);
+    if (idx >= 0) {
+      if (confirm(`已有同名节点「${p.name}」。\n确定 = 覆盖旧节点；取消 = 自动改名 ${p.name}-2 保留两个`)) {
+        S.model.proxies[idx] = {node: p.node, name: p.node.name, type: p.type, server: p.server, port: p.port};
+        continue;
+      }
+      let n = 2; while (proxyNames().includes(`${p.name}-${n}`)) n++;
+      p.node.name = `${p.name}-${n}`; p.name = p.node.name;
+    }
+    S.model.proxies.push({node: p.node, name: p.node.name, type: p.type, server: p.server, port: p.port});
+  }
+  S.pending = []; $('linkPreview').classList.add('hidden'); $('linkBox').value = '';
+  markDirty(); renderEasyNodes(); renderEasyGroups(); renderEasyPorts();
+}
+
+async function addYamlFrag(taId, errId) {
+  const raw = $(taId).value.trim();
+  if (!raw) return;
+  try {
+    await api('/api/parse-yaml', {raw});
+    S.model.proxies.push({raw});
+    $(taId).value = ''; $(errId).classList.add('hidden');
+    markDirty(); renderEasyNodes(); renderEasyGroups(); renderEasyPorts(); renderAdvNodes();
+  } catch (e) { $(errId).textContent = '✕ ' + e.message; $(errId).classList.remove('hidden'); }
+}
+
+/* ---- 任务② ---- */
+function renderEasyGroups() {
+  // 成员勾选（_gfSel 为工作选择集，与组名是否已存在解耦）
+  const f = S.gfFilter.toLowerCase();
+  const members = S._gfSel ??= [];
+  $('gfMembers').innerHTML = S.model.proxies
+    .filter(p => !f || p.name.toLowerCase().includes(f))
+    .map(p => `<label><input type="checkbox" data-gm="${esc(p.name)}" ${members.includes(p.name) ? 'checked' : ''}> ${esc(p.name)}</label>`)
+    .join('') || '<span class="note">（暂无节点，先去任务①添加）</span>';
+  // 组列表
+  const usedBy = {};
+  (S.model.listeners || []).forEach(l => { if (l.proxy) (usedBy[l.proxy] ??= []).push(l.port); });
+  $('easyGroupCount').textContent = `共 ${S.model.groups.length} 个`;
+  $('easyGroupTable').innerHTML = '<tr><th>组名</th><th>类型</th><th>成员数</th><th>被哪些端口用</th><th></th></tr>' +
+    S.model.groups.map((g, i) => `<tr>
+      <td>${esc(g.name)}</td><td>${esc(g.type)}</td><td>${(g.proxies || []).length}</td>
+      <td class="mono">${(usedBy[g.name] || []).join(', ') || '—'}</td>
+      <td><button class="del" data-act="loadGroup" data-i="${i}">载入</button>
+          <button class="del" data-act="delGroup" data-i="${i}">删除</button></td></tr>`).join('');
+  document.querySelectorAll('.radio-card').forEach(c =>
+    c.classList.toggle('on', c.dataset.gtype === S.gtype));
+}
+$('gfMembers').addEventListener('change', e => {
+  const name = e.target.dataset.gm; if (!name) return;
+  const arr = S._gfSel ??= [];
+  const i = arr.indexOf(name);
+  if (e.target.checked && i < 0) arr.push(name);
+  if (!e.target.checked && i >= 0) arr.splice(i, 1);
+});
+document.querySelectorAll('.radio-card').forEach(c => c.onclick = () => {
+  S.gtype = c.dataset.gtype; renderEasyGroups();
+});
+// 组名匹配到已有组时，勾选集载入该组成员；否则保留当前勾选
+$('gfName').addEventListener('input', () => {
+  const g = S.model.groups.find(g => g.name === $('gfName').value.trim());
+  if (g) S._gfSel = [...(g.proxies || [])];
+  renderEasyGroups();
+});
+$('gfFilter').addEventListener('input', () => { S.gfFilter = $('gfFilter').value; renderEasyGroups(); });
+$('easyNodeFilter').addEventListener('input', () => { S.nodeFilter = $('easyNodeFilter').value; renderEasyNodes(); });
+$('advNodeFilter').addEventListener('input', () => { S.advNodeFilter = $('advNodeFilter').value; renderAdvNodes(); });
+
+function applyGroupForm() {
+  const name = $('gfName').value.trim();
+  if (!name) { banner('组名不能为空'); return; }
+  const members = [...(S._gfSel || [])];
+  const interval = +$('gfInterval').value || 0;
+  let g = S.model.groups.find(g => g.name === name);
+  if (g) {
+    g.type = S.gtype; g.interval = interval; g.proxies = members;
+  } else {
+    g = {name, type: S.gtype, proxies: members,
+         url: 'https://www.gstatic.com/generate_204', interval};
+    S.model.groups.push(g);
+  }
+  if (S.gtype === 'url-test' || S.gtype === 'fallback') {
+    if (!g.url) g.url = 'https://www.gstatic.com/generate_204';
+    if (!g.interval) g.interval = interval || 300;
+  }
+  S._gfSel = undefined; markDirty(); renderEasyGroups(); renderEasyPorts();
+  toast(`组「${esc(name)}」已更新（记得保存）`);
+}
+
+/* ---- 任务③ 简化端口 ---- */
+function renderEasyPorts() {
+  const groups = groupNames(), proxies = proxyNames();
+  $('easyPortTable').innerHTML =
+    '<tr><th>端口</th><th>出口绑到（节点或组）</th><th>指纹浏览器填这个</th><th></th></tr>' +
+    (S.model.listeners || []).map((l, i) => `<tr>
+      <td><input type="number" data-li="${i}" data-k="port" value="${l.port || ''}" style="width:80px"></td>
+      <td><select data-li="${i}" data-k="proxy" style="width:65%">
+        <option value="">（按规则分流）</option>
+        <optgroup label="策略组">${groups.map(n => `<option ${l.proxy === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>
+        <optgroup label="节点">${proxies.map(n => `<option ${l.proxy === n ? 'selected' : ''}>${esc(n)}</option>`).join('')}</optgroup>
+      </select></td>
+      <td class="mono">socks5://127.0.0.1:${l.port || '?'} <button class="copy-btn" data-act="copy" data-v="socks5://127.0.0.1:${l.port}">复制</button></td>
+      <td><button class="del" data-act="delListener" data-i="${i}">✕</button></td></tr>`).join('');
+}
+$('easyPortTable').addEventListener('input', e => {
+  const i = +e.target.dataset.li, k = e.target.dataset.k;
+  const l = S.model.listeners[i]; if (!l) return;
+  l[k] = k === 'port' ? +e.target.value : e.target.value;
+  markDirty();
+  if (k === 'port') renderEasyPorts();
+});
+
+/* ============ 详细模式 / 详细+说明 ============ */
+function renderAdv(guide) {
+  renderAdvListeners(); renderAdvGroups(); renderAdvNodes(); renderGeneral();
+}
+
+function renderAdvListeners() {
+  $('advListenerTable').innerHTML =
+    '<tr><th>名称</th><th>类型</th><th>监听</th><th>端口</th><th>绑定目标</th><th>浏览器代理地址</th><th></th></tr>' +
+    (S.model.listeners || []).map((l, i) => `<tr>
+      <td><input type="text" data-li="${i}" data-k="name" value="${esc(l.name)}" style="width:115px"></td>
+      <td><select data-li="${i}" data-k="type">${['socks','mixed','http'].map(t =>
+        `<option ${l.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select></td>
+      <td><input type="text" data-li="${i}" data-k="listen" value="${esc(l.listen)}" style="width:100px"></td>
+      <td><input type="number" data-li="${i}" data-k="port" value="${l.port || ''}" style="width:70px"></td>
+      <td><input type="text" list="targets" data-li="${i}" data-k="proxy" value="${esc(l.proxy)}" style="width:92%"></td>
+      <td class="mono">socks5://127.0.0.1:${l.port || '?'} <button class="copy-btn" data-act="copy" data-v="socks5://127.0.0.1:${l.port}">复制</button></td>
+      <td><button class="del" data-act="delListener" data-i="${i}">✕</button></td></tr>`).join('');
+  $('targets').innerHTML =
+    groupNames().map(n => `<option value="${esc(n)}" label="策略组">`).join('') +
+    proxyNames().map(n => `<option value="${esc(n)}" label="节点">`).join('');
+}
+$('advListenerTable').addEventListener('input', e => {
+  const i = +e.target.dataset.li, k = e.target.dataset.k;
+  const l = S.model.listeners[i]; if (!l || !k) return;
+  l[k] = k === 'port' ? +e.target.value : e.target.value;
+  markDirty();
+});
+
+const GTYPES = ['select', 'url-test', 'fallback', 'load-balance', 'relay'];
+function renderAdvGroups() {
+  $('advGroupCards').innerHTML = S.model.groups.map((g, i) => `
+    <div class="task" style="margin:10px 14px">
+      <div class="task-h" style="border-bottom:1px dashed var(--bd)">
+        <input type="text" data-gi="${i}" data-k="name" value="${esc(g.name)}" style="width:160px">
+        <select data-gi="${i}" data-k="type">${GTYPES.map(t => `<option ${g.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        <button class="del" data-act="delGroup" data-i="${i}" style="margin-left:auto">删除组 ✕</button>
+      </div>
+      <div class="row" style="align-items:flex-start"><div style="flex:1">
+        <div class="note">成员（勾选节点/其他组）：<input type="text" data-gfilter="${i}" placeholder="过滤" style="width:130px"></div>
+        <div class="chk" data-gchk="${i}">${memberBoxes(g)}</div>
+      </div>
+      <div class="col" style="min-width:300px">
+        <span class="note">测速 url（url-test/fallback/load-balance 用）</span>
+        <input type="text" data-gi="${i}" data-k="url" value="${esc(g.url || '')}" placeholder="https://www.gstatic.com/generate_204">
+        <span class="note">interval(秒) <input type="number" data-gi="${i}" data-k="interval" value="${g.interval || ''}" style="width:70px">
+        tolerance(ms) <input type="number" data-gi="${i}" data-k="tolerance" value="${g.tolerance || ''}" style="width:60px"></span>
+        <span class="note"><input type="checkbox" data-gi="${i}" data-k="lazy" ${g.lazy ? 'checked' : ''}> lazy（无流量不触发测速）</span>
+        <span class="note">use（provider，逗号分隔） <input type="text" data-gi="${i}" data-k="use" value="${esc((g.use || []).join(','))}" style="width:130px"></span>
+      </div></div>
+    </div>`).join('');
+}
+function memberBoxes(g, filter = '') {
+  const f = filter.toLowerCase();
+  const cur = new Set(g.proxies || []);
+  const cand = [...proxyNames(), ...groupNames().filter(n => n !== g.name)];
+  return cand.filter(n => !f || n.toLowerCase().includes(f))
+    .map(n => `<label><input type="checkbox" data-gm data-i="${S.model.groups.indexOf(g)}" value="${esc(n)}" ${cur.has(n) ? 'checked' : ''}> ${esc(n)}</label>`).join('');
+}
+$('advGroupCards').addEventListener('input', e => {
+  const i = +e.target.dataset.gi, k = e.target.dataset.k;
+  if (e.target.dataset.gfilter !== undefined) {
+    const gi = +e.target.dataset.gfilter;
+    e.target.closest('.row').querySelector(`[data-gchk="${gi}"]`).innerHTML =
+      memberBoxes(S.model.groups[gi], e.target.value);
+    return;
+  }
+  const g = S.model.groups[i]; if (!g || !k) return;
+  if (k === 'lazy') g.lazy = e.target.checked;
+  else if (k === 'use') g.use = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+  else if (k === 'interval' || k === 'tolerance') g[k] = +e.target.value;
+  else g[k] = e.target.value;
+  markDirty();
+});
+// 成员勾选（change 委托，data-gm 标记、data-i=组序号）
+$('advGroupCards').addEventListener('change', e => {
+  const cb = e.target;
+  if (!cb.hasAttribute('data-gm')) return;
+  const i = +cb.dataset.i, g = S.model.groups[i]; if (!g) return;
+  g.proxies ??= [];
+  const ix = g.proxies.indexOf(cb.value);
+  if (cb.checked && ix < 0) g.proxies.push(cb.value);
+  if (!cb.checked && ix >= 0) g.proxies.splice(ix, 1);
+  markDirty();
+});
+
+function renderAdvNodes() {
+  const f = S.advNodeFilter.toLowerCase();
+  const rows = S.model.proxies.map((p, i) => ({p, i}))
+    .filter(({p}) => !f || (p.name + p.type + p.server).toLowerCase().includes(f));
+  $('advNodeCount').textContent = `共 ${S.model.proxies.length} 个`;
+  $('advNodeShown').textContent = `显示 ${rows.length}/${S.model.proxies.length}`;
+  $('advNodeTable').innerHTML = '<tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th><th></th></tr>' +
+    rows.map(({p, i}) => `<tr><td>${esc(p.name)}</td><td>${esc(p.type)}</td>
+      <td class="mono">${esc(p.server)}</td><td class="mono">${p.port || ''}</td>
+      <td><button class="del" data-act="delProxy" data-i="${i}">✕</button></td></tr>`).join('');
+}
+
+function renderGeneral() {
+  $('gMixedPort').value = S.model.mixedPort || '';
+  $('gAllowLan').checked = !!S.model.allowLan;
+  $('gMode').value = S.model.mode || 'rule';
+}
+$('gMixedPort').addEventListener('input', e => { S.model.mixedPort = +e.target.value; markDirty(); });
+$('gAllowLan').addEventListener('change', e => { S.model.allowLan = e.target.checked; markDirty(); });
+$('gMode').addEventListener('change', e => { S.model.mode = e.target.value; markDirty(); });
+
+/* ============ 结构操作（按钮委托） ============ */
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const i = +b.dataset.i;
+  switch (b.dataset.act) {
+    case 'copy': copyText(b.dataset.v, b); break;
+    case 'delListener':
+      S.model.listeners.splice(i, 1); markDirty();
+      S.mode === 'easy' ? renderEasyPorts() : renderAdvListeners();
+      renderEasyGroups(); break;
+    case 'delGroup':
+      if (confirm('删除该组？被端口/其他组引用会在校验区报错。')) {
+        S.model.groups.splice(i, 1); markDirty();
+        S.mode === 'easy' ? (renderEasyGroups(), renderEasyPorts()) : (renderAdvGroups(), renderAdvListeners());
+      }
+      break;
+    case 'delProxy':
+      if (confirm('删除该节点？被组/端口引用会在校验区报错。')) {
+        S.model.proxies.splice(i, 1); markDirty();
+        renderEasyNodes(); renderEasyGroups(); renderEasyPorts(); renderAdvNodes(); renderAdvGroups();
+      }
+      break;
+    case 'loadGroup': {
+      const g = S.model.groups[i]; if (!g) break;
+      $('gfName').value = g.name; S.gtype = GTYPES.includes(g.type) ? g.type : 'select';
+      $('gfInterval').value = g.interval || 300; S._gfSel = [...(g.proxies || [])];
+      renderEasyGroups(); break;
+    }
+  }
+});
+
+$('btnAddPort').onclick = () => {
+  const used = new Set(S.model.listeners.map(l => l.port));
+  let p = 12001; while (used.has(p)) p++;
+  S.model.listeners.push({name: 'exit-' + p, type: 'socks', port: p, listen: '127.0.0.1', proxy: ''});
+  markDirty(); renderEasyPorts();
+};
+$('btnAddListener').onclick = () => {
+  const used = new Set(S.model.listeners.map(l => l.port));
+  let p = 12001; while (used.has(p)) p++;
+  S.model.listeners.push({name: 'exit-' + p, type: 'socks', port: p, listen: '127.0.0.1', proxy: ''});
+  markDirty(); renderAdvListeners();
+};
+$('btnAddGroup').onclick = () => {
+  let n = 1; while (groupNames().includes('新组' + n)) n++;
+  S.model.groups.push({name: '新组' + n, type: 'url-test', proxies: [],
+    url: 'https://www.gstatic.com/generate_204', interval: 300});
+  markDirty(); renderAdvGroups();
+};
+
+/* ============ 其他按钮 ============ */
+$('btnScan').onclick = doScan;
+$('btnLoad').onclick = () => {
+  const p = $('filePath').value.trim() || $('fileSelect').value;
+  if (!p) { banner('请先选择文件或填写路径'); return; }
+  doLoad(p);
+};
+$('fileSelect').addEventListener('change', () => { if ($('fileSelect').value) doLoad($('fileSelect').value); });
+$('btnNew').onclick = $('btnNew2').onclick = doNew;
+$('btnSave').onclick = $('btnSaveEasy').onclick = doSave;
+$('btnParseLinks').onclick = doParseLinks;
+$('btnAddLinks').onclick = addPendingLinks;
+$('btnYamlMode').onclick = () => $('yamlBox').classList.toggle('hidden');
+$('btnAddYaml').onclick = () => addYamlFrag('yamlFrag', 'yamlErr');
+$('btnAdvAddYaml').onclick = () => addYamlFrag('advYamlFrag', 'advYamlErr');
+$('btnGroupApply').onclick = applyGroupForm;
+$('btnGroupReset').onclick = () => { $('gfName').value = ''; $('gfInterval').value = 300; S._gfSel = []; renderEasyGroups(); };
+$('btnPreview').onclick = () => { $('secYaml').scrollIntoView({behavior:'smooth'}); refreshYaml(); };
+
+async function refreshYaml() {
+  if (!S.model) { $('yamlOut').textContent = '（未加载配置）'; return; }
+  try {
+    const j = await api('/api/preview', {model: S.model});
+    $('yamlOut').textContent = j.yaml;
+  } catch (e) { $('yamlOut').textContent = '生成失败：' + e.message; }
+}
+$('btnYamlRefresh').onclick = refreshYaml;
+$('btnYamlCopy').onclick = e => copyText($('yamlOut').textContent, e.target);
+$('btnYamlDl').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([$('yamlOut').textContent], {type: 'text/yaml'}));
+  a.download = (S.path ? S.path.split(/[\\/]/).pop() : 'config') || 'config.yaml';
+  a.click(); URL.revokeObjectURL(a.href);
+};
+
+/* ============ 启动 ============ */
+(async function init() {
+  try {
+    const j = await (await fetch('/api/state')).json();
+    S.path = j.path || ''; S.files = j.files || []; S.scanDir = j.scanDir || '';
+    if (S.scanDir) $('clashDir').value = S.scanDir;
+    if (!S.scanDir) $('clashDir').value = '';
+    renderFileSelect();
+    if (j.model) { S.model = j.model; }
+  } catch (e) { banner('初始化失败：' + e.message); }
+  render();
+})();
+</script>
+</body>
+</html>
