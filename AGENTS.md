@@ -1,7 +1,8 @@
 # 项目操作规则
 
-> ⚠️ **AI 署名约定**（AI Signature Policy）：用户知晓历史提交含 `Co-Authored-By: Devin` / `Generated with [Devin]` 署名，决定**允许保留署名推送**，后续 push 不再询问。
-> 记录于 2026-11-22，触发场景：push origin main（检出全部历史提交含 Devin bot 署名）。
+> ⚠️ **AI 署名约定**（AI Signature Policy）
+> 记录于 2026-11-22，触发场景：push origin main（检出全部历史提交含 Devin bot 署名，用户知晓并同意）。
+> 约定：允许保留署名推送
 > 修改约定请直接编辑本行。
 
 ## 项目事实与文档入口
