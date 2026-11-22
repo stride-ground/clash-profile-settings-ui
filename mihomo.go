@@ -18,6 +18,8 @@ type ProxyEntry struct {
 	Type      string         `json:"type"`
 	Server    string         `json:"server"`
 	Port      int            `json:"port"`
+	Reality   bool           `json:"reality,omitempty"` // 含 reality-opts（用于缺 flow 预警）
+	Flow      string         `json:"flow,omitempty"`
 	Raw       string         `json:"raw,omitempty"`  // 新节点：粘贴的 mihomo YAML 片段
 	Node      map[string]any `json:"node,omitempty"` // 新节点：链接解析的结构化产物（优先于 Raw）
 }
@@ -225,6 +227,8 @@ func (d *Doc) Model() *Model {
 			Type:      getStr(p, "type"),
 			Server:    getStr(p, "server"),
 			Port:      getInt(p, "port"),
+			Reality:   mapGet(p, "reality-opts") != nil,
+			Flow:      getStr(p, "flow"),
 		})
 	}
 	for i, g := range d.groups {
@@ -486,6 +490,20 @@ func Validate(m *Model, portBusy func(int) bool) []Issue {
 	for _, p := range m.Proxies {
 		if p.Name != "" {
 			names[p.Name] = true
+		}
+		// vless+Reality 缺 flow：多数服务端强制 xtls-rprx-vision，缺失握手失败
+		reality := p.Reality
+		flow := p.Flow
+		if p.Node != nil {
+			if _, ok := p.Node["reality-opts"]; ok {
+				reality = true
+			}
+			if flow == "" {
+				flow, _ = p.Node["flow"].(string)
+			}
+		}
+		if p.Type == "vless" && reality && flow == "" {
+			add("warn", "节点:"+p.Name, "vless+Reality 节点缺少 flow 字段；多数服务端要求 flow: xtls-rprx-vision，缺失会握手失败（延迟测试 error/timeout）")
 		}
 	}
 	groupNames := map[string]bool{}
