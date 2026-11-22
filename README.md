@@ -51,7 +51,7 @@ Clash Verge Rev / mihomo 出站配置器 —— 一个**单文件 Windows 工具
 环境要求：Go 1.27+（仅一个外部依赖 `gopkg.in/yaml.v3`）。
 
 ```bash
-git clone https://github.com/<你的用户名>/clash-profile-settings-ui.git
+git clone https://github.com/stride-ground/clash-profile-settings-ui.git
 cd clash-profile-settings-ui
 go mod tidy
 
