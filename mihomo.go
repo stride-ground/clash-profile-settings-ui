@@ -278,7 +278,9 @@ func newMapNode() *yaml.Node {
 	return &yaml.Node{Kind: yaml.MappingNode, Tag: "!!map"}
 }
 
-func parseFrag(raw string) (*yaml.Node, error) {
+// parseFrags 解析节点 YAML，接受三种形态：
+// 裸映射（{name:…} 或多行块）、单/多列表项（- name: …）、整个节点序列。
+func parseFrags(raw string) ([]*yaml.Node, error) {
 	var n yaml.Node
 	if err := yaml.Unmarshal([]byte(raw), &n); err != nil {
 		return nil, err
@@ -287,10 +289,33 @@ func parseFrag(raw string) (*yaml.Node, error) {
 		return nil, fmt.Errorf("空内容")
 	}
 	f := n.Content[0]
-	if f.Kind != yaml.MappingNode {
-		return nil, fmt.Errorf("需要 YAML 映射（如 {name: x, type: vless, ...}）")
+	switch f.Kind {
+	case yaml.MappingNode:
+		return []*yaml.Node{f}, nil
+	case yaml.SequenceNode:
+		if len(f.Content) == 0 {
+			return nil, fmt.Errorf("空序列")
+		}
+		for _, item := range f.Content {
+			if item.Kind != yaml.MappingNode {
+				return nil, fmt.Errorf("序列元素必须是节点映射（{name:…, type:…}）")
+			}
+		}
+		return f.Content, nil
+	default:
+		return nil, fmt.Errorf("需要节点映射或列表（如 {name: x, type: vless, …} 或 - name: x …）")
 	}
-	return f, nil
+}
+
+func parseFrag(raw string) (*yaml.Node, error) {
+	ns, err := parseFrags(raw)
+	if err != nil {
+		return nil, err
+	}
+	if len(ns) != 1 {
+		return nil, fmt.Errorf("需要恰好一个节点映射")
+	}
+	return ns[0], nil
 }
 
 // setOrDel：val 为零值时删除该 key
@@ -314,20 +339,22 @@ func (d *Doc) Apply(m *Model) error {
 			}
 			return fmt.Errorf("节点 origIndex=%d 越界", *p.OrigIndex)
 		}
-		var n *yaml.Node
+		var ns []*yaml.Node
 		if p.Node != nil {
-			n = enc(p.Node)
+			ns = []*yaml.Node{enc(p.Node)}
 		} else {
 			var err error
-			n, err = parseFrag(p.Raw)
+			ns, err = parseFrags(p.Raw)
 			if err != nil {
 				return fmt.Errorf("新节点 YAML 解析失败: %w", err)
 			}
 		}
-		if getStr(n, "name") == "" {
-			return fmt.Errorf("新节点缺少 name 字段")
+		for _, n := range ns {
+			if getStr(n, "name") == "" {
+				return fmt.Errorf("新节点缺少 name 字段")
+			}
+			pseq.Content = append(pseq.Content, n)
 		}
-		pseq.Content = append(pseq.Content, n)
 	}
 	mapSet(d.mapping, "proxies", pseq)
 

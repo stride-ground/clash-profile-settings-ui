@@ -325,17 +325,27 @@ func (s *Server) hParseYAML(w http.ResponseWriter, r *http.Request) {
 		writeErr(w, 400, err)
 		return
 	}
-	n, err := parseFrag(req.Raw)
+	frags, err := parseFrags(req.Raw)
 	if err != nil {
 		writeErr(w, 400, err)
 		return
 	}
-	if getStr(n, "name") == "" {
-		writeErr(w, 400, fmt.Errorf("缺少 name 字段"))
-		return
+	nodes := []any{}
+	for i, f := range frags {
+		if getStr(f, "name") == "" {
+			writeErr(w, 400, fmt.Errorf("第 %d 个节点缺少 name 字段", i+1))
+			return
+		}
+		var obj map[string]any
+		if err := f.Decode(&obj); err != nil {
+			writeErr(w, 400, fmt.Errorf("第 %d 个节点解码失败: %w", i+1, err))
+			return
+		}
+		nodes = append(nodes, map[string]any{
+			"name": getStr(f, "name"), "type": getStr(f, "type"),
+			"server": getStr(f, "server"), "port": getInt(f, "port"),
+			"node": obj,
+		})
 	}
-	writeJSON(w, map[string]any{
-		"name": getStr(n, "name"), "type": getStr(n, "type"),
-		"server": getStr(n, "server"), "port": getInt(n, "port"),
-	})
+	writeJSON(w, map[string]any{"nodes": nodes})
 }

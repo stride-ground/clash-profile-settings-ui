@@ -207,11 +207,40 @@ func TestParseFrag(t *testing.T) {
 	if _, err := parseFrag("name: x\ntype: vless\nserver: s\nport: 1"); err != nil {
 		t.Errorf("块映射应可解析: %v", err)
 	}
-	if _, err := parseFrag(`- a\n- b`); err == nil {
-		t.Error("序列应报错")
+	if _, err := parseFrag(`- a
+- b`); err == nil {
+		t.Error("非标量序列元素应报错")
 	}
 	if _, err := parseFrag(``); err == nil {
 		t.Error("空应报错")
+	}
+}
+
+func TestParseFragsSeq(t *testing.T) {
+	// 配置文件里整段复制的 - name: 列表项
+	single, err := parseFrags(`- name: demo-sg
+  type: vless
+  server: vless1.demo-example.com
+  port: 31085
+  uuid: aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+  tls: true
+  servername: th.bing.com
+  reality-opts:
+    public-key: DEMO_PUBLIC_KEY_wwwwwwwwwwwwwwwwwwwww
+    short-id: ab01cd
+  network: tcp
+  client-fingerprint: chrome`)
+	if err != nil || len(single) != 1 {
+		t.Fatalf("单列表项应解析为 1 节点: %v len=%d", err, len(single))
+	}
+	if getStr(single[0], "name") != "demo-sg" || getStr(single[0], "servername") != "th.bing.com" {
+		t.Error("列表项字段读取不对")
+	}
+	// 多节点序列
+	multi, err := parseFrags(`- {name: a, type: vless, server: s1, port: 1}
+- {name: b, type: hysteria2, server: s2, port: 2}`)
+	if err != nil || len(multi) != 2 {
+		t.Fatalf("双节点序列应解析为 2: %v len=%d", err, len(multi))
 	}
 }
 

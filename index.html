@@ -125,10 +125,10 @@
   <div class="task">
     <div class="task-h"><span class="n">1</span>把你的节点加进来<span class="why">— 有 vless:// / hysteria2:// 链接就直接粘，一行一个</span></div>
     <div class="row" style="align-items:flex-start">
-      <textarea id="linkBox" rows="4" style="flex:1;font-family:Consolas,monospace;font-size:12px" placeholder="vless://uuid@server:port?security=reality&pbk=...#节点名&#10;hysteria2://password@server:port?sni=...#节点名"></textarea>
+      <textarea id="linkBox" rows="4" style="flex:1;font-family:Consolas,monospace;font-size:12px" placeholder="支持两种格式，混粘也行：&#10;① 链接一行一个：vless://uuid@server:port?security=reality&pbk=...#节点名  或 hysteria2://密码@服务器:端口#节点名&#10;② YAML 节点块（从配置文件整段复制，含 - 开头也行）"></textarea>
       <div class="col">
-        <button class="btn primary" id="btnParseLinks">解析链接</button>
-        <button class="btn sm" id="btnYamlMode">改用 YAML 片段</button>
+        <button class="btn primary" id="btnParseLinks">解析</button>
+        <button class="btn sm" id="btnYamlMode">单独 YAML 框</button>
       </div>
     </div>
     <div id="linkErrors"></div>
@@ -414,48 +414,58 @@ function renderEasyNodes() {
 async function doParseLinks() {
   banner(''); $('linkErrors').innerHTML = '';
   const text = $('linkBox').value;
-  if (!text.trim()) { banner('请先粘贴链接'); return; }
+  if (!text.trim()) { banner('请先粘贴链接或节点 YAML'); return; }
+  const lines = text.split('\n').map(s => s.trim()).filter(Boolean);
+  const allLinks = lines.every(l => l.includes('://'));
   try {
-    const j = await api('/api/parse-links', {text});
-    S.pending = j.proxies || [];
-    $('linkErrors').innerHTML = (j.errors || []).map(e =>
-      `<div class="err-line">✕ 第 ${e.line} 行：${esc(e.message)}</div>`).join('');
+    if (allLinks) {
+      const j = await api('/api/parse-links', {text});
+      S.pending = j.proxies || [];
+      $('linkErrors').innerHTML = (j.errors || []).map(e =>
+        `<div class="err-line">✕ 第 ${e.line} 行：${esc(e.message)}</div>`).join('');
+    } else {
+      // YAML 节点块（裸映射 / - name: 列表项 / 多节点序列）
+      const j = await api('/api/parse-yaml', {raw: text});
+      S.pending = j.nodes || [];
+    }
     $('linkPreview').classList.toggle('hidden', S.pending.length === 0);
     $('linkCount').textContent = S.pending.length + ' 个节点';
     $('linkTable').innerHTML = '<tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th></tr>' +
       S.pending.map((p, i) => `<tr>
         <td><input type="text" data-pi="${i}" value="${esc(p.name)}" style="width:170px"></td>
-        <td>${esc(p.type)}</td><td class="mono">${esc(p.server)}</td><td class="mono">${p.port}</td></tr>`).join('');
+        <td>${esc(p.type)}</td><td class="mono">${esc(p.server)}</td><td class="mono">${p.port || ''}</td></tr>`).join('');
   } catch (e) { banner(e.message); }
 }
 $('linkTable').addEventListener('input', e => {
   const i = +e.target.dataset.pi;
   if (S.pending[i]) { S.pending[i].name = e.target.value; S.pending[i].node.name = e.target.value; }
 });
-function addPendingLinks() {
-  if (!S.pending.length) return;
-  for (const p of S.pending) {
-    const idx = S.model.proxies.findIndex(x => x.name === p.name);
-    if (idx >= 0) {
-      if (confirm(`已有同名节点「${p.name}」。\n确定 = 覆盖旧节点；取消 = 自动改名 ${p.name}-2 保留两个`)) {
-        S.model.proxies[idx] = {node: p.node, name: p.node.name, type: p.type, server: p.server, port: p.port};
-        continue;
-      }
-      let n = 2; while (proxyNames().includes(`${p.name}-${n}`)) n++;
-      p.node.name = `${p.name}-${n}`; p.name = p.node.name;
+// 入列一个节点（含重名询问：覆盖或自动改名）
+function addNodeEntry(p) {
+  const idx = S.model.proxies.findIndex(x => x.name === p.name);
+  if (idx >= 0) {
+    if (confirm(`已有同名节点「${p.name}」。\n确定 = 覆盖旧节点；取消 = 自动改名 ${p.name}-2 保留两个`)) {
+      S.model.proxies[idx] = {node: p.node, name: p.name, type: p.type, server: p.server, port: p.port};
+      return;
     }
-    S.model.proxies.push({node: p.node, name: p.node.name, type: p.type, server: p.server, port: p.port});
+    let n = 2; while (proxyNames().includes(`${p.name}-${n}`)) n++;
+    p.node.name = `${p.name}-${n}`; p.name = p.node.name;
   }
+  S.model.proxies.push({node: p.node, name: p.name, type: p.type, server: p.server, port: p.port});
+}
+function addPendingLinks() {
+  if (!S.pending.length) { banner('没有待加入的节点，先点「解析」'); return; }
+  for (const p of S.pending) addNodeEntry(p);
   S.pending = []; $('linkPreview').classList.add('hidden'); $('linkBox').value = '';
-  markDirty(); renderEasyNodes(); renderEasyGroups(); renderEasyPorts();
+  markDirty(); renderEasyNodes(); renderEasyGroups(); renderEasyPorts(); renderAdvNodes();
 }
 
 async function addYamlFrag(taId, errId) {
   const raw = $(taId).value.trim();
   if (!raw) return;
   try {
-    await api('/api/parse-yaml', {raw});
-    S.model.proxies.push({raw});
+    const j = await api('/api/parse-yaml', {raw});
+    for (const p of (j.nodes || [])) addNodeEntry(p);
     $(taId).value = ''; $(errId).classList.add('hidden');
     markDirty(); renderEasyNodes(); renderEasyGroups(); renderEasyPorts(); renderAdvNodes();
   } catch (e) { $(errId).textContent = '✕ ' + e.message; $(errId).classList.remove('hidden'); }
