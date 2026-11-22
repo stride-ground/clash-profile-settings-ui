@@ -48,7 +48,7 @@ proxies:
     servername: th.bing.com
     reality-opts:
       public-key: DEMO_PUBLIC_KEY_zzzzzzzzzzzzzzzzzzzzz
-      short-id: "cd03ef"
+      short-id: cd03ef
       support-x25519mlkem768: true
     network: tcp
     client-fingerprint: chrome

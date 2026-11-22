@@ -791,7 +791,12 @@ $('btnYamlDl').onclick = () => {
     if (!S.scanDir) $('clashDir').value = '';
     renderFileSelect();
     if (j.model) { S.model = j.model; }
-  } catch (e) { banner('初始化失败：' + e.message); }
+  } catch (e) {
+    const tip = location.protocol === 'file:'
+      ? '工具后端未启动 —— 本页面不能单独打开，请先运行 clash-profile-ui.exe，再用它弹出的地址访问'
+      : '连不上工具后端 —— 请确认 clash-profile-ui.exe 正在运行，且地址栏端口与它控制台打印的一致（' + e.message + '）';
+    banner(tip);
+  }
   render();
 })();
 </script>

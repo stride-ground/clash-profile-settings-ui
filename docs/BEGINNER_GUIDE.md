@@ -27,7 +27,7 @@
 在「新手任务」第一块，把服务商给的链接**整行**粘进大输入框，点「解析」：
 
 ```
-vless://aaaaaaaa-...@vless1.demo-example.com:31085?security=reality&pbk=...&sid=...#节点名
+vless://<uuid>@server.example.com:443?security=reality&pbk=...&sid=...#节点名
 ```
 
 - 解析成功 → 下面出现待加入表，名称可以直接改
