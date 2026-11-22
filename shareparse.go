@@ -112,6 +112,9 @@ func parseVLESS(u *url.URL) (*ParsedNode, error) {
 		if v := q.Get("sid"); v != "" {
 			ro["short-id"] = v
 		}
+		if v := q.Get("spx"); v != "" {
+			ro["spider-x"] = v
+		}
 		node["reality-opts"] = ro
 		node["client-fingerprint"] = firstOf(q.Get("fp"), "chrome")
 	case "tls":
