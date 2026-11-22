@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed index.html
@@ -161,6 +164,7 @@ func (s *Server) mux() *http.ServeMux {
 	mux.HandleFunc("POST /api/save", s.hSave)
 	mux.HandleFunc("POST /api/parse-links", s.hParseLinks)
 	mux.HandleFunc("POST /api/parse-yaml", s.hParseYAML)
+	mux.HandleFunc("POST /api/node-detail", s.hNodeDetail)
 	return mux
 }
 
@@ -348,4 +352,37 @@ func (s *Server) hParseYAML(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	writeJSON(w, map[string]any{"nodes": nodes})
+}
+
+// hNodeDetail 返回某个节点的完整 YAML 文本（uuid/密钥/flow 等全部字段），
+// 供 UI 详情弹窗展示。优先取原文档节点（保留原字段顺序与注释）。
+func (s *Server) hNodeDetail(w http.ResponseWriter, r *http.Request) {
+	var e ProxyEntry
+	if err := decode(r, &e); err != nil {
+		writeErr(w, 400, err)
+		return
+	}
+	var n *yaml.Node
+	if s.doc != nil && e.OrigIndex != nil {
+		n = s.doc.proxyNode(*e.OrigIndex)
+	}
+	if n == nil && e.Node != nil {
+		n = enc(e.Node)
+	}
+	if n == nil && strings.TrimSpace(e.Raw) != "" {
+		n, _ = parseFrag(e.Raw)
+	}
+	if n == nil {
+		writeErr(w, 400, fmt.Errorf("找不到该节点的内容（可能已删除或未加载配置）"))
+		return
+	}
+	var buf bytes.Buffer
+	ye := yaml.NewEncoder(&buf)
+	ye.SetIndent(2)
+	if err := ye.Encode(n); err != nil {
+		writeErr(w, 500, err)
+		return
+	}
+	ye.Close()
+	writeJSON(w, map[string]string{"yaml": buf.String()})
 }

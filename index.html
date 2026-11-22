@@ -245,6 +245,18 @@
 
 </div>
 
+<!-- 节点详情弹窗 -->
+<div id="nodeModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99" onclick="if(event.target===this)this.style.display='none'">
+  <div style="max-width:640px;margin:6vh auto;background:var(--card,#fff);border:1px solid var(--bd,#ddd);border-radius:8px;padding:14px;max-height:80vh;overflow:auto">
+    <div class="row" style="justify-content:space-between;margin-bottom:8px">
+      <b id="nodeModalTitle">节点详情</b>
+      <span><button class="btn sm" id="btnNodeCopy">复制 YAML</button>
+      <button class="btn sm" onclick="$('nodeModal').style.display='none'">关闭</button></span>
+    </div>
+    <pre id="nodeYamlOut" style="font-size:12px;white-space:pre-wrap;word-break:break-all;margin:0">加载中…</pre>
+  </div>
+</div>
+
 <script>
 'use strict';
 /* ============ 状态 ============ */
@@ -289,6 +301,20 @@ function copyText(txt, btn) {
     setTimeout(() => btn.textContent = o, 1200);
   });
 }
+
+/* 节点详情弹窗：取该节点完整 YAML（uuid/密钥/flow 等全字段） */
+async function viewNodeDetail(i) {
+  const p = S.model && S.model.proxies[i];
+  if (!p) return;
+  $('nodeModalTitle').textContent = p.name;
+  $('nodeYamlOut').textContent = '加载中…';
+  $('nodeModal').style.display = 'block';
+  try {
+    const j = await api('/api/node-detail', p);
+    $('nodeYamlOut').textContent = j.yaml;
+  } catch (e) { $('nodeYamlOut').textContent = '获取失败：' + e.message; }
+}
+$('btnNodeCopy').onclick = e => copyText($('nodeYamlOut').textContent, e.target);
 
 /* ============ 校验 ============ */
 let vTimer = null;
@@ -408,7 +434,8 @@ function renderEasyNodes() {
     '<tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th><th></th></tr>' +
     rows.map(({p, i}) => `<tr>
       <td>${esc(p.name)}</td><td>${esc(p.type)}</td><td class="mono">${esc(p.server)}</td><td class="mono">${p.port || ''}</td>
-      <td><button class="del" data-act="delProxy" data-i="${i}">✕</button></td></tr>`).join('');
+      <td><button class="del" data-act="viewProxy" data-i="${i}">详</button>
+          <button class="del" data-act="delProxy" data-i="${i}">✕</button></td></tr>`).join('');
 }
 
 async function doParseLinks() {
@@ -651,7 +678,8 @@ function renderAdvNodes() {
   $('advNodeTable').innerHTML = '<tr><th>名称</th><th>类型</th><th>服务器</th><th>端口</th><th></th></tr>' +
     rows.map(({p, i}) => `<tr><td>${esc(p.name)}</td><td>${esc(p.type)}</td>
       <td class="mono">${esc(p.server)}</td><td class="mono">${p.port || ''}</td>
-      <td><button class="del" data-act="delProxy" data-i="${i}">✕</button></td></tr>`).join('');
+      <td><button class="del" data-act="viewProxy" data-i="${i}">详</button>
+          <button class="del" data-act="delProxy" data-i="${i}">✕</button></td></tr>`).join('');
 }
 
 function renderGeneral() {
@@ -679,6 +707,9 @@ document.addEventListener('click', e => {
         S.mode === 'easy' ? (renderEasyGroups(), renderEasyPorts()) : (renderAdvGroups(), renderAdvListeners());
       }
       break;
+    case 'viewProxy':
+      viewNodeDetail(i); break;
+    case 'closeNodeModal': $('nodeModal').style.display = 'none'; break;
     case 'delProxy':
       if (confirm('删除该节点？被组/端口引用会在校验区报错。')) {
         S.model.proxies.splice(i, 1); markDirty();
