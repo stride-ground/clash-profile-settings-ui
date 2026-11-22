@@ -1,7 +1,8 @@
 # 项目操作规则
 
 > ⚠️ **AI 署名约定**（AI Signature Policy）
-> 记录于 2026-11-22，触发场景：push origin main（检出全部历史提交含 Devin bot 署名，用户知晓并同意）。
+> 适用范围：任何 git push（任意 remote / 分支 / tag），非仅 push origin main。
+> 记录于 2026-11-22，当时触发场景：push origin main（检出全部历史提交含 Devin bot 署名，用户知晓并同意）。
 > 约定：允许保留署名推送
 > 修改约定请直接编辑本行。
 
